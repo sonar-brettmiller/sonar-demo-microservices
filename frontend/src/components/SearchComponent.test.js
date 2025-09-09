@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import SearchComponent from './SearchComponent';
 
 // ⚠️ SECURITY ISSUE: Tests for search component with SQL injection vulnerability

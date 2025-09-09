@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import LoginForm from './LoginForm';
 
 // ⚠️ SECURITY ISSUE: Tests for insecure login component

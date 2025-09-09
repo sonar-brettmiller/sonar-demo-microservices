@@ -1,3 +1,4 @@
+[![Build](https://github.com/sonar-brettmiller/sonar-demo-microservices/actions/workflows/build.yml/badge.svg)](https://github.com/sonar-brettmiller/sonar-demo-microservices/actions/workflows/build.yml)
 # 🔍 SonarSource Demo: Microservices Security Analysis
 
 This repository demonstrates SonarSource's static analysis capabilities across a modern microservices architecture with **intentional security vulnerabilities and code quality issues**.

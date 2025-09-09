@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import App from './App';
 
 // ⚠️ SECURITY ISSUE: Tests that validate insecure frontend behavior
