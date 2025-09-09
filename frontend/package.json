@@ -4,18 +4,17 @@
   "description": "SonarSource Demo Frontend - React app with intentional security vulnerabilities",
   "private": true,
   "dependencies": {
-    "react": "17.0.2",
-    "react-dom": "17.0.2",
-    "react-scripts": "4.0.3",
-    "axios": "0.21.1",
-    "lodash": "4.17.19",
-    "moment": "2.29.1",
-    "jquery": "3.5.1",
-    "bootstrap": "4.6.0",
-    "react-router-dom": "5.3.0",
-    "@testing-library/jest-dom": "^5.16.0",
     "@testing-library/react": "^11.2.0",
     "@testing-library/user-event": "^12.8.0",
+    "axios": "0.21.1",
+    "bootstrap": "4.6.0",
+    "jquery": "3.5.1",
+    "lodash": "4.17.19",
+    "moment": "2.29.1",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-router-dom": "5.3.0",
+    "react-scripts": "4.0.3",
     "web-vitals": "^1.1.0"
   },
   "scripts": {
@@ -52,5 +51,8 @@
     "frontend"
   ],
   "author": "SonarSource Solutions Engineering",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0"
+  }
 }

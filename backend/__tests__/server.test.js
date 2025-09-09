@@ -1,25 +1,43 @@
 const request = require('supertest');
-// Note: In a real app, we'd import the server differently to avoid starting it
-// const app = require('../server');
+
+// Import the app for testing (this will execute server.js code)
+const app = require('../server');
 
 describe('SonarSource Demo Backend API', () => {
   // ⚠️ SECURITY ISSUE: Test that validates insecure behavior
   describe('Security Vulnerabilities', () => {
     test('should expose debug endpoint with sensitive information', async () => {
-      // This test documents the intentional security vulnerability
-      expect(true).toBe(true); // Placeholder test
+      // Test the actual debug endpoint (this executes server.js code)
+      const response = await request(app)
+        .get('/api/debug')
+        .expect(200);
+      
+      // Verify it exposes secrets (intentional vulnerability)
+      expect(response.body).toHaveProperty('secrets');
+      expect(response.body.secrets).toHaveProperty('jwtSecret');
     });
 
     test('should accept SQL injection in login endpoint', async () => {
-      // This test documents the intentional SQL injection vulnerability
-      expect(true).toBe(true); // Placeholder test
+      // Test the actual login endpoint (this executes server.js code)
+      const response = await request(app)
+        .post('/api/login')
+        .send({ username: 'admin', password: 'password123' })
+        .expect(200);
+      
+      // Verify login works (tests the vulnerable code path)
+      expect(response.body).toHaveProperty('token');
     });
   });
 
   describe('API Endpoints', () => {
-    test('should have basic API structure', () => {
-      // Basic test to ensure Jest is working
-      expect(1 + 1).toBe(2);
+    test('should respond to posts endpoint', async () => {
+      // Test the actual posts endpoint (this executes server.js code)
+      const response = await request(app)
+        .get('/api/posts')
+        .expect(200);
+      
+      // Verify posts data is returned
+      expect(Array.isArray(response.body)).toBe(true);
     });
   });
 
