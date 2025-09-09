@@ -1,0 +1,56 @@
+{
+  "name": "sonar-demo-frontend",
+  "version": "1.0.0",
+  "description": "SonarSource Demo Frontend - React app with intentional security vulnerabilities",
+  "private": true,
+  "dependencies": {
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-scripts": "4.0.3",
+    "axios": "0.21.1",
+    "lodash": "4.17.19",
+    "moment": "2.29.1",
+    "jquery": "3.5.1",
+    "bootstrap": "4.6.0",
+    "react-router-dom": "5.3.0",
+    "@testing-library/jest-dom": "^5.16.0",
+    "@testing-library/react": "^11.2.0",
+    "@testing-library/user-event": "^12.8.0",
+    "web-vitals": "^1.1.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "proxy": "http://localhost:5000",
+  "keywords": [
+    "sonar",
+    "demo",
+    "security",
+    "vulnerabilities",
+    "react",
+    "frontend"
+  ],
+  "author": "SonarSource Solutions Engineering",
+  "license": "MIT"
+}

@@ -1,0 +1,176 @@
+/* SonarSource Demo App Styles */
+
+.App {
+  min-height: 100vh;
+}
+
+.navbar-brand {
+  font-weight: bold;
+}
+
+/* Security issue indicators */
+.security-warning {
+  border-left: 4px solid #dc3545;
+  background-color: #f8d7da;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.security-info {
+  border-left: 4px solid #17a2b8;
+  background-color: #d1ecf1;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+/* Card styling */
+.card {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Form styling */
+.form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* Button styling */
+.btn-group .btn {
+  margin-right: 5px;
+}
+
+.btn-group .btn:last-child {
+  margin-right: 0;
+}
+
+/* List group styling */
+.list-group-item {
+  border: 1px solid #dee2e6;
+  margin-bottom: 5px;
+  border-radius: 0.25rem;
+}
+
+.list-group-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Badge styling */
+.badge {
+  font-size: 0.75em;
+}
+
+/* Code display */
+code {
+  color: #e83e8c;
+  font-size: 87.5%;
+  word-wrap: break-word;
+}
+
+/* Progress bar */
+.progress {
+  height: 1.5rem;
+}
+
+/* Alert styling */
+.alert {
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.alert-warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border-color: #ffeaa7;
+}
+
+.alert-info {
+  color: #0c5460;
+  background-color: #d1ecf1;
+  border-color: #b8daff;
+}
+
+.alert-danger {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+/* Search highlighting */
+mark {
+  background-color: yellow;
+  padding: 2px 4px;
+}
+
+/* Debug information styling */
+.debug-info {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8em;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  padding: 10px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  .card-body {
+    padding: 15px;
+  }
+  
+  .btn-group .btn {
+    margin-bottom: 5px;
+  }
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading {
+  animation: pulse 2s infinite;
+}
+
+/* Utility classes */
+.text-break {
+  word-break: break-word !important;
+  word-wrap: break-word !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.border-danger {
+  border-color: #dc3545 !important;
+}
+
+.border-warning {
+  border-color: #ffc107 !important;
+}
+
+.border-info {
+  border-color: #17a2b8 !important;
+}
