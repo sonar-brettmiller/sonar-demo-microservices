@@ -418,5 +418,5 @@ app.listen(PORT, () => {
     
     initializeDatabase();
 });
-
+// Trigger SonarCloud analysis
 module.exports = app;
