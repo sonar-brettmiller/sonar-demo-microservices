@@ -9,6 +9,15 @@
     "test": "jest",
     "test:coverage": "jest --coverage"
   },
+  "jest": {
+    "collectCoverageFrom": [
+      "*.js",
+      "!*.test.js",
+      "!jest.config.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "clover"]
+  },
   "dependencies": {
     "express": "4.17.1",
     "cors": "2.8.5",
