@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+When running test suites, make sure that they are actually passing - check the terminal output. If they are not passing, notify me and keep note of it. If possible, we will try to fix the test.

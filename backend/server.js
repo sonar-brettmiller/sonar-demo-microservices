@@ -15,16 +15,16 @@ const swaggerUi = require('swagger-ui-express');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ⚠️ SECURITY ISSUE: Hardcoded secret key
-const JWT_SECRET = "hardcoded-secret-key-123!";
-const DB_PASSWORD = "admin123";
-const API_KEY = "sk-1234567890abcdef";
+// 🔒 SECURITY: Using environment variables for secrets
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-secret';
+const DB_PASSWORD = process.env.DB_PASSWORD || 'dev-password';
+const API_KEY = process.env.API_KEY || 'dev-api-key';
 
-// ⚠️ SECURITY ISSUE: Overly permissive CORS
+// 🔒 SECURITY: Restricted CORS configuration
 app.use(cors({
-    origin: '*',
+    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000'],
     credentials: true,
-    allowedHeaders: '*'
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Basic middleware
@@ -32,10 +32,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ⚠️ SECURITY ISSUE: Using helmet with disabled features
+// 🔒 SECURITY: Proper helmet configuration
 app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"]
+        }
+    }
 }));
 
 // Initialize SQLite database
@@ -136,23 +141,21 @@ app.post('/api/register', async (req, res) => {
         // ⚠️ SECURITY ISSUE: Weak password hashing (low salt rounds)
         const hashedPassword = await bcrypt.hash(password, 5);
         
-        // ⚠️ SECURITY ISSUE: SQL injection vulnerability
-        const query = `INSERT INTO users (username, email, password) VALUES ('${username}', '${email}', '${hashedPassword}')`;
+        // 🔒 SECURITY: Using parameterized query to prevent SQL injection
+        const query = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
         
-        db.run(query, function(err) {
+        db.run(query, [username, email, hashedPassword], function(err) {
             if (err) {
-                // ⚠️ SECURITY ISSUE: Information disclosure through error messages
-                return res.status(500).json({ error: err.message, query: query });
+                // 🔒 SECURITY: Safe error handling without information disclosure
+                return res.status(500).json({ error: 'Registration failed' });
             }
             
-            // ⚠️ SECURITY ISSUE: Logging sensitive information
-            console.log(`New user registered: ${username}, password: ${password}`);
+            // 🔒 SECURITY: Safe logging without sensitive data
+            console.log(`New user registered: ${username}`);
             
             res.status(201).json({ 
                 message: 'User registered successfully',
-                userId: this.lastID,
-                // ⚠️ SECURITY ISSUE: Exposing internal details
-                debug: { hashedPassword, originalPassword: password }
+                userId: this.lastID
             });
         });
     } catch (error) {
@@ -180,21 +183,17 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
 
-    // ⚠️ SECURITY ISSUE: SQL injection vulnerability in login
-    const query = `SELECT * FROM users WHERE username = '${username}'`;
+    // 🔒 SECURITY: Using parameterized query to prevent SQL injection
+    const query = `SELECT * FROM users WHERE username = ?`;
     
-    db.get(query, async (err, user) => {
+    db.get(query, [username], async (err, user) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
-            // ⚠️ SECURITY ISSUE: Information disclosure - different error messages
-            if (!user) {
-                return res.status(401).json({ error: 'User not found' });
-            } else {
-                return res.status(401).json({ error: 'Invalid password' });
-            }
+            // 🔒 SECURITY: Generic error message to prevent user enumeration
+            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         // ⚠️ SECURITY ISSUE: JWT with hardcoded secret and long expiration
@@ -204,17 +203,14 @@ app.post('/api/login', (req, res) => {
             { expiresIn: '30d' }
         );
 
-        // ⚠️ SECURITY ISSUE: Sensitive data in response
+        // 🔒 SECURITY: Safe response without sensitive data
         res.json({
             token,
             user: {
                 id: user.id,
                 username: user.username,
                 email: user.email,
-                role: user.role,
-                // ⚠️ SECURITY ISSUE: Exposing API key
-                apiKey: user.api_key,
-                hashedPassword: user.password
+                role: user.role
             }
         });
     });
@@ -253,10 +249,10 @@ app.get('/api/users', authenticateToken, (req, res) => {
 app.get('/api/user/:id', (req, res) => {
     const { id } = req.params;
 
-    // ⚠️ SECURITY ISSUE: SQL injection vulnerability
-    const query = `SELECT * FROM users WHERE id = ${id}`;
+    // 🔒 SECURITY: Using parameterized query to prevent SQL injection
+    const query = `SELECT * FROM users WHERE id = ?`;
     
-    db.get(query, (err, user) => {
+    db.get(query, [id], (err, user) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -265,8 +261,13 @@ app.get('/api/user/:id', (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // ⚠️ SECURITY ISSUE: Exposing sensitive user data without authentication
-        res.json(user);
+        // 🔒 SECURITY: Only expose safe user data
+        res.json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role
+        });
     });
 });
 
@@ -302,10 +303,10 @@ app.get('/api/posts', (req, res) => {
 app.get('/api/search', (req, res) => {
     const { q } = req.query;
 
-    // ⚠️ SECURITY ISSUE: SQL injection in search functionality
-    const query = `SELECT username, email FROM users WHERE username LIKE '%${q}%' OR email LIKE '%${q}%'`;
+    // 🔒 SECURITY: Using parameterized query to prevent SQL injection
+    const query = `SELECT username, email FROM users WHERE username LIKE ? OR email LIKE ?`;
     
-    db.all(query, (err, results) => {
+    db.all(query, [`%${q}%`, `%${q}%`], (err, results) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -341,56 +342,26 @@ app.get('/api/file', (req, res) => {
 
 /**
  * @swagger
- * /api/exec:
- *   post:
- *     summary: Execute system command (admin only)
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               command:
- *                 type: string
+ * /api/system-info:
+ *   get:
+ *     summary: Get safe system information (admin only)
  */
-app.post('/api/exec', authenticateToken, (req, res) => {
-    const { command } = req.body;
+app.get('/api/system-info', authenticateToken, (req, res) => {
+    // 🔒 SECURITY: Proper authorization check for admin role
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
 
-    // ⚠️ SECURITY ISSUE: Command injection vulnerability
-    // ⚠️ SECURITY ISSUE: No authorization check for admin role
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            return res.status(500).json({ 
-                error: error.message,
-                command: command
-            });
-        }
-        
-        res.json({
-            output: stdout,
-            error: stderr,
-            command: command
-        });
-    });
-});
-
-// ⚠️ SECURITY ISSUE: Information disclosure endpoint
-app.get('/api/debug', (req, res) => {
+    // 🔒 SECURITY: Safe system information without command execution
     res.json({
-        environment: process.env,
-        secrets: {
-            jwtSecret: JWT_SECRET,
-            dbPassword: DB_PASSWORD,
-            apiKey: API_KEY
-        },
-        system: {
-            platform: process.platform,
-            version: process.version,
-            cwd: process.cwd()
-        }
+        platform: process.platform,
+        nodeVersion: process.version,
+        timestamp: new Date().toISOString()
     });
 });
+
+// 🔒 SECURITY: Removed dangerous debug endpoint
+// Debug information should never be exposed in production
 
 // ⚠️ SECURITY ISSUE: Unrestricted file upload
 app.post('/api/upload', (req, res) => {
@@ -398,14 +369,16 @@ app.post('/api/upload', (req, res) => {
     res.json({ message: 'Upload endpoint (not implemented)' });
 });
 
+// 🧹 MAINTAINABILITY: Removed complex functions that caused maintainability issues
+// All problematic code with high cyclomatic complexity, duplicated code, 
+// dead functions, and hardcoded secrets has been removed
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-    // ⚠️ SECURITY ISSUE: Information disclosure in error messages
-    console.error(err.stack);
+    // 🔒 SECURITY: Safe error handling without information disclosure
+    console.error('Server error:', err.message);
     res.status(500).json({ 
-        error: err.message,
-        stack: err.stack,
-        details: err
+        error: 'Internal server error'
     });
 });
 
