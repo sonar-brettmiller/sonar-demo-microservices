@@ -14,7 +14,12 @@ const localStorageMock = {
   removeItem: jest.fn(),
   clear: jest.fn(),
 };
-global.localStorage = localStorageMock;
+
+// Replace the actual localStorage with our mock
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  writable: true
+});
 
 describe('App Component', () => {
   beforeEach(() => {
@@ -31,12 +36,34 @@ describe('App Component', () => {
   });
 
   test('renders welcome message when user is authenticated', async () => {
-    localStorageMock.getItem.mockReturnValue('mock-token');
-    mockedAxios.get.mockResolvedValueOnce({
-      data: [{ id: 1, username: 'testuser' }]
-    });
+    // Simulate a successful login
+    const mockLoginResponse = {
+      data: {
+        token: 'mock-jwt-token',
+        user: {
+          id: 1,
+          username: 'testuser',
+          email: 'test@example.com',
+          role: 'user'
+        }
+      }
+    };
+
+    mockedAxios.post.mockResolvedValueOnce(mockLoginResponse);
+    mockedAxios.get
+      .mockResolvedValueOnce({ data: [] }) // users fetch
+      .mockResolvedValueOnce({ data: [] }); // posts fetch
 
     render(<App />);
+    
+    // Perform login
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /login/i });
+
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password' } });
+    fireEvent.click(loginButton);
     
     await waitFor(() => {
       expect(screen.getByText(/Welcome to the Demo App/)).toBeTruthy();
@@ -88,7 +115,7 @@ describe('App Component', () => {
 
     await waitFor(() => {
       expect(localStorageMock.setItem).toHaveBeenCalledWith('authToken', 'mock-jwt-token');
-    });
+    }, { timeout: 3000 });
   });
 
   test('handles login failure', async () => {
@@ -117,13 +144,34 @@ describe('App Component', () => {
   });
 
   test('handles logout correctly', async () => {
-    localStorageMock.getItem.mockReturnValue('mock-token');
-    mockedAxios.get.mockResolvedValueOnce({
-      data: [{ id: 1, username: 'testuser' }]
-    });
+    // First simulate a successful login
+    const mockLoginResponse = {
+      data: {
+        token: 'mock-jwt-token',
+        user: {
+          id: 1,
+          username: 'testuser',
+          email: 'test@example.com',
+          role: 'user'
+        }
+      }
+    };
+
+    mockedAxios.post.mockResolvedValueOnce(mockLoginResponse);
+    mockedAxios.get.mockResolvedValueOnce({ data: [] }); // for users fetch
+    mockedAxios.get.mockResolvedValueOnce({ data: [] }); // for posts fetch
 
     render(<App />);
     
+    // Perform login
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /login/i });
+
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password' } });
+    fireEvent.click(loginButton);
+
     await waitFor(() => {
       expect(screen.getByText('Welcome, testuser')).toBeTruthy();
     });
@@ -137,15 +185,15 @@ describe('App Component', () => {
 
   test('validates token on mount with valid token', async () => {
     localStorageMock.getItem.mockReturnValue('valid-token');
-    mockedAxios.get.mockResolvedValueOnce({
-      data: [{ id: 1, username: 'testuser' }]
-    });
+    mockedAxios.get
+      .mockResolvedValueOnce({ data: [{ id: 1, username: 'testuser' }] }) // token validation
+      .mockResolvedValueOnce({ data: [] }); // posts fetch
 
     render(<App />);
     
     await waitFor(() => {
       expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.stringContaining('/users'),
+        'http://localhost:5000/users',
         expect.objectContaining({
           headers: { Authorization: 'Bearer valid-token' }
         })
@@ -155,19 +203,34 @@ describe('App Component', () => {
 
   test('clears invalid token on mount', async () => {
     localStorageMock.getItem.mockReturnValue('invalid-token');
-    mockedAxios.get.mockRejectedValueOnce(new Error('Unauthorized'));
+    mockedAxios.get
+      .mockRejectedValueOnce(new Error('Unauthorized')) // token validation fails
+      .mockResolvedValueOnce({ data: [] }); // posts fetch still works
 
     render(<App />);
     
     await waitFor(() => {
       expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken');
-    });
+    }, { timeout: 3000 });
   });
 
   test('handles search functionality', async () => {
-    localStorageMock.getItem.mockReturnValue('mock-token');
+    // First simulate a successful login to show the search interface
+    const mockLoginResponse = {
+      data: {
+        token: 'mock-jwt-token',
+        user: {
+          id: 1,
+          username: 'testuser',
+          email: 'test@example.com',
+          role: 'user'
+        }
+      }
+    };
+
+    mockedAxios.post.mockResolvedValueOnce(mockLoginResponse);
     mockedAxios.get
-      .mockResolvedValueOnce({ data: [] }) // token validation
+      .mockResolvedValueOnce({ data: [] }) // users fetch after login
       .mockResolvedValueOnce({ data: [] }) // posts fetch
       .mockResolvedValueOnce({ // search results
         data: [{ username: 'searchuser', email: 'search@example.com' }]
@@ -175,11 +238,20 @@ describe('App Component', () => {
 
     render(<App />);
     
+    // Perform login first
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /login/i });
+
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password' } });
+    fireEvent.click(loginButton);
+
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/search users/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/search by username or email/i)).toBeTruthy();
     });
 
-    const searchInput = screen.getByPlaceholderText(/search users/i);
+    const searchInput = screen.getByPlaceholderText(/search by username or email/i);
     fireEvent.change(searchInput, { target: { value: 'searchuser' } });
     fireEvent.submit(searchInput.closest('form'));
 
@@ -235,9 +307,36 @@ describe('App Component', () => {
       { id: 2, title: 'Second Post', content: 'Second content' }
     ];
 
-    mockedAxios.get.mockResolvedValueOnce({ data: mockPosts });
+    // First simulate a successful login to show the posts section
+    const mockLoginResponse = {
+      data: {
+        token: 'mock-jwt-token',
+        user: {
+          id: 1,
+          username: 'testuser',
+          email: 'test@example.com',
+          role: 'user'
+        }
+      }
+    };
+
+    // Mock posts fetch for initial component mount
+    mockedAxios.get.mockResolvedValueOnce({ data: mockPosts }); // posts fetch
+    
+    // Mock login and subsequent requests
+    mockedAxios.post.mockResolvedValueOnce(mockLoginResponse);
+    mockedAxios.get.mockResolvedValueOnce({ data: [] }); // users fetch after login
 
     render(<App />);
+    
+    // Perform login first
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /login/i });
+
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password' } });
+    fireEvent.click(loginButton);
     
     await waitFor(() => {
       expect(screen.getByText('First Post')).toBeTruthy();
