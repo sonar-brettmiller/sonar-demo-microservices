@@ -123,3 +123,7 @@ junit.xml
 /storage/*.key
 /vendor
 .env.backup
+
+
+./backend/node_modules/*
+./frontend/node_modules/*
