@@ -35,11 +35,10 @@ jobs:
         npm run test:coverage || true  # Don't fail if tests fail - we want to see coverage
         
     - name: Run frontend tests with coverage  
-      env:
-        SKIP_PREFLIGHT_CHECK: true
       run: |
         cd frontend
-        npm test -- --coverage --watchAll=false || true  # Don't fail if tests fail
+        echo "SKIP_PREFLIGHT_CHECK=true" > .env
+        SKIP_PREFLIGHT_CHECK=true npm test -- --coverage --watchAll=false || true  # Don't fail if tests fail
         
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@master
