@@ -23,6 +23,18 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "resolutions": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "@babel/preset-react": "^7.22.0",
+    "@babel/plugin-syntax-import-attributes": "^7.22.0"
+  },
+  "overrides": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "@babel/preset-react": "^7.22.0",
+    "@babel/plugin-syntax-import-attributes": "^7.22.0"
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -51,5 +63,8 @@
     "frontend"
   ],
   "author": "SonarSource Solutions Engineering",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.28.4"
+  }
 }
