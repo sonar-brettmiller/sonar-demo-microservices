@@ -409,14 +409,17 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Initialize database for both server and tests
+initializeDatabase();
+
+// Start server only if not in test mode
+if (require.main === module) {
+  app.listen(PORT, () => {
     console.log(`🚀 SonarSource Demo Backend running on port ${PORT}`);
     console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
     console.log(`🔐 JWT Secret: ${JWT_SECRET}`);
     console.log(`🗄️  Database Password: ${DB_PASSWORD}`);
-    
-    initializeDatabase();
-});
-// Trigger SonarCloud analysis
+  });
+}
+
 module.exports = app;
