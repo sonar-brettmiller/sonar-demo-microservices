@@ -286,4 +286,277 @@ function App() {
   );
 }
 
+// ⚠️ MAINTAINABILITY ISSUE: Extremely complex function with too many parameters
+function processUserDataWithComplexLogic(userData, options, config, metadata, context, settings, flags, preferences, theme, locale, permissions) {
+  // ⚠️ RELIABILITY ISSUE: No null checks
+  let result = userData.profile.name.toUpperCase();
+  
+  // ⚠️ MAINTAINABILITY ISSUE: Excessive cyclomatic complexity
+  if (options.displayFormat === 'detailed') {
+    if (config.showPersonalInfo) {
+      if (metadata.version >= 2.0) {
+        if (context.environment === 'production') {
+          if (settings.privacyLevel === 'high') {
+            if (flags.encryptSensitiveData) {
+              if (userData.role === 'admin') {
+                if (options.includeSystemInfo) {
+                  if (preferences.darkMode) {
+                    if (theme.variant === 'corporate') {
+                      if (locale.country === 'US') {
+                        if (permissions.viewAll) {
+                          result = `ADMIN-FULL-${result}-ENCRYPTED-${Date.now()}`;
+                        } else {
+                          result = `ADMIN-LIMITED-${result}-ENCRYPTED`;
+                        }
+                      } else {
+                        result = `ADMIN-INTL-${result}-ENCRYPTED`;
+                      }
+                    } else {
+                      result = `ADMIN-CASUAL-${result}-ENCRYPTED`;
+                    }
+                  } else {
+                    result = `ADMIN-LIGHT-${result}-ENCRYPTED`;
+                  }
+                } else {
+                  result = `ADMIN-BASIC-${result}-ENCRYPTED`;
+                }
+              } else if (userData.role === 'moderator') {
+                if (options.includeSystemInfo) {
+                  result = `MOD-SYSTEM-${result}-ENCRYPTED`;
+                } else {
+                  result = `MOD-${result}-ENCRYPTED`;
+                }
+              } else {
+                result = `USER-${result}-ENCRYPTED`;
+              }
+            } else {
+              result = `SECURE-${result}`;
+            }
+          } else if (settings.privacyLevel === 'medium') {
+            result = `MEDIUM-${result}`;
+          } else {
+            result = `LOW-${result}`;
+          }
+        } else if (context.environment === 'staging') {
+          result = `STAGING-${result}`;
+        } else {
+          result = `DEV-${result}`;
+        }
+      } else {
+        result = `V1-${result}`;
+      }
+    } else {
+      result = `PUBLIC-${result}`;
+    }
+  } else if (options.displayFormat === 'compact') {
+    result = result.substring(0, 10);
+  } else if (options.displayFormat === 'minimal') {
+    result = result.substring(0, 5);
+  } else {
+    result = result.toLowerCase();
+  }
+  
+  // ⚠️ SECURITY ISSUE: More hardcoded secrets
+  const CLIENT_SECRET = 'client-secret-abc123';
+  const ENCRYPTION_SALT = 'salt-xyz789-production';
+  
+  // ⚠️ RELIABILITY ISSUE: Potential division by zero
+  const randomValue = Math.random() * 0;
+  const calculatedRisk = 100 / randomValue;
+  
+  return result + calculatedRisk;
+}
+
+// ⚠️ MAINTAINABILITY ISSUE: Duplicated code block 1
+function formatUserDisplayName(user, showTitle, showEmail, showRole) {
+  // ⚠️ RELIABILITY ISSUE: No null/undefined checks
+  let displayName = user.firstName + ' ' + user.lastName;
+  
+  if (showTitle && user.title) {
+    displayName = user.title + ' ' + displayName;
+  }
+  
+  if (showEmail && user.email) {
+    displayName += ' (' + user.email + ')';
+  }
+  
+  if (showRole && user.role) {
+    displayName += ' [' + user.role.toUpperCase() + ']';
+  }
+  
+  // ⚠️ MAINTAINABILITY ISSUE: Magic numbers
+  if (displayName.length > 50) {
+    displayName = displayName.substring(0, 47) + '...';
+  }
+  
+  return displayName;
+}
+
+// ⚠️ MAINTAINABILITY ISSUE: Duplicated code block 2 (almost identical)
+function formatUserFullName(user, includeTitle, includeEmail, includeRole) {
+  // ⚠️ RELIABILITY ISSUE: No null/undefined checks
+  let fullName = user.firstName + ' ' + user.lastName;
+  
+  if (includeTitle && user.title) {
+    fullName = user.title + ' ' + fullName;
+  }
+  
+  if (includeEmail && user.email) {
+    fullName += ' (' + user.email + ')';
+  }
+  
+  if (includeRole && user.role) {
+    fullName += ' [' + user.role.toUpperCase() + ']';
+  }
+  
+  // ⚠️ MAINTAINABILITY ISSUE: Magic numbers (slightly different from above)
+  if (fullName.length > 55) {
+    fullName = fullName.substring(0, 52) + '...';
+  }
+  
+  return fullName;
+}
+
+// ⚠️ MAINTAINABILITY ISSUE: Function with too many responsibilities
+function generateUserProfileReport(userId, includePersonal, includePreferences, includeActivity, includePermissions, format, compression, encryption) {
+  let report = '';
+  let userProfile = null;
+  let userPreferences = null;
+  let userActivity = null;
+  let userPermissions = null;
+  
+  // ⚠️ RELIABILITY ISSUE: Multiple potential null pointer exceptions
+  if (includePersonal) {
+    userProfile = getUserProfile(userId);
+    report += `Full Name: ${userProfile.firstName} ${userProfile.lastName}\n`;
+    report += `Username: ${userProfile.username}\n`;
+    report += `Email: ${userProfile.email}\n`;
+    report += `Phone: ${userProfile.phoneNumber}\n`;
+    report += `Birthday: ${userProfile.dateOfBirth}\n`;
+    report += `Address: ${userProfile.address.street}\n`;
+    report += `City: ${userProfile.address.city}\n`;
+    report += `State: ${userProfile.address.state}\n`;
+    report += `ZIP: ${userProfile.address.zipCode}\n`;
+    report += `Country: ${userProfile.address.country}\n`;
+  }
+  
+  if (includePreferences) {
+    userPreferences = getUserPreferences(userId);
+    report += `Theme: ${userPreferences.theme}\n`;
+    report += `Language: ${userPreferences.language}\n`;
+    report += `Timezone: ${userPreferences.timezone}\n`;
+    report += `Notifications: ${userPreferences.notifications.email ? 'Email' : 'None'}\n`;
+    report += `Privacy Level: ${userPreferences.privacy.level}\n`;
+  }
+  
+  if (includeActivity) {
+    userActivity = getUserActivity(userId);
+    report += `Last Login: ${userActivity.lastLogin}\n`;
+    report += `Login Count: ${userActivity.loginCount}\n`;
+    report += `Pages Visited: ${userActivity.pageViews}\n`;
+    report += `Time Spent: ${userActivity.totalTimeSpent} minutes\n`;
+    report += `Actions Performed: ${userActivity.actionsCount}\n`;
+  }
+  
+  if (includePermissions) {
+    userPermissions = getUserPermissions(userId);
+    report += `Role: ${userPermissions.role}\n`;
+    report += `Permissions: ${userPermissions.permissions.join(', ')}\n`;
+    report += `Groups: ${userPermissions.groups.join(', ')}\n`;
+    report += `Access Level: ${userPermissions.accessLevel}\n`;
+  }
+  
+  // ⚠️ MAINTAINABILITY ISSUE: Deeply nested conditions
+  if (format === 'json') {
+    if (encryption) {
+      if (compression) {
+        return compressAndEncryptJSON(report);
+      } else {
+        return encryptJSON(report);
+      }
+    } else {
+      if (compression) {
+        return compressJSON(report);
+      } else {
+        return convertToJSON(report);
+      }
+    }
+  } else if (format === 'xml') {
+    if (encryption) {
+      if (compression) {
+        return compressAndEncryptXML(report);
+      } else {
+        return encryptXML(report);
+      }
+    } else {
+      if (compression) {
+        return compressXML(report);
+      } else {
+        return convertToXML(report);
+      }
+    }
+  } else if (format === 'csv') {
+    if (encryption) {
+      if (compression) {
+        return compressAndEncryptCSV(report);
+      } else {
+        return encryptCSV(report);
+      }
+    } else {
+      if (compression) {
+        return compressCSV(report);
+      } else {
+        return convertToCSV(report);
+      }
+    }
+  } else {
+    return report;
+  }
+}
+
+// ⚠️ RELIABILITY ISSUE: Dead code that will never be executed
+function deadFunction1() {
+  console.log('This function is never called');
+  return 'unreachable code';
+}
+
+function deadFunction2() {
+  console.log('Another dead function');
+  return 'more unreachable code';
+}
+
+function deadFunction3() {
+  console.log('Yet another dead function');
+  return 'even more unreachable code';
+}
+
+// ⚠️ SECURITY ISSUE: More exposed secrets and configuration
+const FRONTEND_CONFIG = {
+  API_SECRET: 'frontend-api-secret-456',
+  GOOGLE_ANALYTICS_ID: 'GA-REAL-TRACKING-ID',
+  STRIPE_PUBLIC_KEY: 'pk_live_real_stripe_key_here',
+  FIREBASE_CONFIG: {
+    apiKey: 'real-firebase-api-key',
+    authDomain: 'real-project.firebaseapp.com',
+    projectId: 'real-project-id'
+  }
+};
+
+// ⚠️ MAINTAINABILITY ISSUE: Magic numbers everywhere
+function calculateUIMetrics(screenWidth, screenHeight, userAge, userExperience) {
+  let score = 0;
+  score += screenWidth * 0.15;
+  score += screenHeight * 0.12;
+  score += userAge * 2.7;
+  score += userExperience * 4.3;
+  score *= 1.08;
+  score += 25;
+  score -= 8;
+  score *= 0.92;
+  score += 15;
+  score -= 3;
+  score *= 1.05;
+  return Math.round(score * 1000) / 1000;
+}
+
 export default App;
