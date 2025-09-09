@@ -1,5 +1,4 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import LoginForm from './LoginForm';
 
 // ⚠️ SECURITY ISSUE: Tests for insecure login component
@@ -9,9 +8,13 @@ describe('LoginForm Component', () => {
   test('renders login form', () => {
     render(<LoginForm onLogin={mockOnLogin} />);
     
-    expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    const usernameField = screen.getByLabelText(/username/i);
+    const passwordField = screen.getByLabelText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /login/i });
+    
+    expect(usernameField).toBeTruthy();
+    expect(passwordField).toBeTruthy();
+    expect(loginButton).toBeTruthy();
   });
 
   test('handles form submission', () => {

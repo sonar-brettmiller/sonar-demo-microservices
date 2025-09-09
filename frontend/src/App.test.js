@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import App from './App';
 
 // ⚠️ SECURITY ISSUE: Tests that validate insecure frontend behavior
 describe('App Component', () => {
   test('renders without crashing', () => {
     render(<App />);
-    expect(screen.getByText(/SonarSource Security Demo/i)).toBeInTheDocument();
+    const element = screen.getByText(/SonarSource Security Demo/i);
+    expect(element).toBeTruthy();
   });
 
   test('contains login form', () => {
@@ -14,9 +14,13 @@ describe('App Component', () => {
     render(<App />);
     
     // This tests the actual App component code, generating coverage
-    expect(screen.getByText(/Login to Demo App/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Username/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Password/i)).toBeInTheDocument();
+    const loginHeader = screen.getByText(/Login to Demo App/i);
+    const usernameField = screen.getByLabelText(/Username/i);
+    const passwordField = screen.getByLabelText(/Password/i);
+    
+    expect(loginHeader).toBeTruthy();
+    expect(usernameField).toBeTruthy();
+    expect(passwordField).toBeTruthy();
   });
 
   test('exposes security vulnerabilities', () => {
@@ -24,7 +28,10 @@ describe('App Component', () => {
     
     // This test exercises the component initialization code
     // which includes the hardcoded API_BASE_URL and secrets
-    expect(screen.getByText(/Demo Notice/i)).toBeInTheDocument();
-    expect(screen.getByText(/intentional security vulnerabilities/i)).toBeInTheDocument();
+    const demoNotice = screen.getByText(/Demo Notice/i);
+    const vulnerabilityText = screen.getByText(/intentional security vulnerabilities/i);
+    
+    expect(demoNotice).toBeTruthy();
+    expect(vulnerabilityText).toBeTruthy();
   });
 });

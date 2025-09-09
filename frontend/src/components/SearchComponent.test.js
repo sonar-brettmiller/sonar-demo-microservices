@@ -1,5 +1,4 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import SearchComponent from './SearchComponent';
 
 // ⚠️ SECURITY ISSUE: Tests for search component with SQL injection vulnerability
@@ -9,8 +8,11 @@ describe('SearchComponent', () => {
   test('renders search input', () => {
     render(<SearchComponent onSearch={mockOnSearch} />);
     
-    expect(screen.getByPlaceholderText(/Search by username or email/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Search/i })).toBeInTheDocument();
+    const searchInput = screen.getByPlaceholderText(/Search by username or email/i);
+    const searchButton = screen.getByRole('button', { name: /Search/i });
+    
+    expect(searchInput).toBeTruthy();
+    expect(searchButton).toBeTruthy();
   });
 
   test('handles search input changes', () => {
