@@ -217,3 +217,4 @@ const SearchComponent = ({ onSearch, results }) => {
 };
 
 export default SearchComponent;
+

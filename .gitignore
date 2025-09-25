@@ -127,3 +127,29 @@ junit.xml
 
 ./backend/node_modules/*
 ./frontend/node_modules/*
+
+# Python
+# Virtual environments
+.venv/
+venv/
+**/.venv/
+**/venv/
+
+# Byte-compiled / cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Test & coverage artifacts
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Packaging
+*.egg-info/
+.eggs/
+python-service/build/
+python-service/dist/
+python-service/.tox/
