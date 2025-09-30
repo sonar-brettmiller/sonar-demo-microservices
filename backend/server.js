@@ -8,7 +8,6 @@ const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
@@ -146,7 +145,13 @@ app.post('/api/register', async (req, res) => {
 
     try {
         const hashedPassword = await hashPassword(password);
-        await createUser(username, email, hashedPassword, res);
+        const userId = await createUser(username, email, hashedPassword);
+        
+        console.log(`New user registered: ${username}`);
+        res.status(201).json({ 
+            message: 'User registered successfully',
+            userId
+        });
     } catch (error) {
         res.status(500).json({ error: 'Registration failed' });
     }
@@ -163,20 +168,17 @@ async function hashPassword(password) {
     return await bcrypt.hash(password, SALT_ROUNDS);
 }
 
-// Create user in database
-function createUser(username, email, hashedPassword, res) {
-    const query = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
-    
-    db.run(query, [username, email, hashedPassword], function(err) {
-        if (err) {
-            return res.status(500).json({ error: 'Registration failed' });
-        }
+// Create user in database (returns Promise)
+function createUser(username, email, hashedPassword) {
+    return new Promise((resolve, reject) => {
+        const query = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
         
-        console.log(`New user registered: ${username}`);
-        
-        res.status(201).json({ 
-            message: 'User registered successfully',
-            userId: this.lastID
+        db.run(query, [username, email, hashedPassword], function(err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(this.lastID);
+            }
         });
     });
 }
@@ -420,8 +422,6 @@ if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 SonarSource Demo Backend running on port ${PORT}`);
     console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
-    console.log(`🔐 JWT Secret: ${JWT_SECRET}`);
-    console.log(`🗄️  Database Password: ${DB_PASSWORD}`);
   });
 }
 
