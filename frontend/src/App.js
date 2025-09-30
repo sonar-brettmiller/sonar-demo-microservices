@@ -14,7 +14,6 @@ function App() {
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
-  const [debugInfo, setDebugInfo] = useState({});
 
   useEffect(() => {
     // 🔒 SECURITY: Safe session restoration without sensitive data logging
@@ -31,7 +30,7 @@ function App() {
   // 🔒 SECURITY: Safe token validation function
   const validateToken = async (token) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/users`, {
+      await axios.get(`${API_BASE_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // If successful, user is still authenticated
@@ -118,6 +117,8 @@ function App() {
       setSearchResults(response.data);
     } catch (error) {
       console.error('Search failed:', error);
+      // Clear results on error to avoid showing stale data
+      setSearchResults([]);
     }
   };
 
@@ -159,17 +160,9 @@ function App() {
       </nav>
 
       <div className="container mt-4">
-        {!user ? (
-          <div className="row justify-content-center">
-            <div className="col-md-6">
-              <LoginForm onLogin={handleLogin} />
-              
-              {/* 🔒 SECURITY: Removed debug information exposure */}
-            </div>
-          </div>
-        ) : (
-          <div>
-            <div className="row">
+        {user ? (
+          
+          <div className="row">
               <div className="col-md-8">
                 <h2>Welcome to the Demo App</h2>
                 
@@ -221,6 +214,11 @@ function App() {
                 
                 <UserList users={users} />
               </div>
+          </div>
+        ) : (
+          <div className="row justify-content-center">
+            <div className="col-md-6">
+              <LoginForm onLogin={handleLogin} />
             </div>
           </div>
         )}

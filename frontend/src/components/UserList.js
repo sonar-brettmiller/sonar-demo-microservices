@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const UserList = ({ users = [] }) => {
 
@@ -36,6 +37,18 @@ const UserList = ({ users = [] }) => {
       </div>
     </div>
   );
+};
+
+UserList.propTypes = {
+  users: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      email: PropTypes.string,
+      role: PropTypes.string,
+      api_key: PropTypes.string
+    })
+  )
 };
 
 export default UserList;

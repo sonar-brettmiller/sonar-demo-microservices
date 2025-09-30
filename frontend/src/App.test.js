@@ -337,4 +337,128 @@ describe('App Component', () => {
       expect(axios.get).toHaveBeenCalled();
     });
   });
+
+  test('handles fetchUsers error gracefully when token is missing', async () => {
+    const mockUserData = {
+      token: 'test-token',
+      user: {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        role: 'admin'
+      }
+    };
+
+    axios.post.mockResolvedValueOnce({ data: mockUserData });
+    axios.get.mockResolvedValue({ data: [] });
+
+    render(<App />);
+
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password' } });
+    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome, testuser/i)).toBeInTheDocument();
+    });
+
+    // Now test fetchUsers with error
+    axios.get.mockRejectedValueOnce(new Error('Network error'));
+
+    const loadButton = screen.getByRole('button', { name: /Load All Users/i });
+    fireEvent.click(loadButton);
+
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/users'),
+        expect.objectContaining({
+          headers: { Authorization: 'Bearer test-token' }
+        })
+      );
+    });
+  });
+
+  test('handles search error and clears results', async () => {
+    const mockUserData = {
+      token: 'test-token',
+      user: {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        role: 'user'
+      }
+    };
+
+    axios.post.mockResolvedValueOnce({ data: mockUserData });
+    axios.get.mockResolvedValue({ data: [] });
+
+    render(<App />);
+
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password' } });
+    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome, testuser/i)).toBeInTheDocument();
+    });
+
+    // Test search with error
+    axios.get.mockRejectedValueOnce(new Error('Search failed'));
+
+    const searchInput = screen.getByPlaceholderText(/Search by username or email/i);
+    fireEvent.change(searchInput, { target: { value: 'test' } });
+    const searchButtons = screen.getAllByRole('button', { name: /search/i });
+    fireEvent.click(searchButtons[0]);
+
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/search?q=test')
+      );
+    });
+  });
+
+  test('renders posts when logged in', async () => {
+    const mockUserData = {
+      token: 'test-token',
+      user: {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        role: 'user'
+      }
+    };
+
+    const mockPosts = [
+      { id: 1, title: 'Post One', content: 'Content One' },
+      { id: 2, title: 'Post Two', content: 'Content Two' }
+    ];
+
+    axios.post.mockResolvedValueOnce({ data: mockUserData });
+    axios.get.mockResolvedValueOnce({ data: mockPosts });
+
+    render(<App />);
+
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password' } });
+    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome, testuser/i)).toBeInTheDocument();
+    });
+
+    // Verify posts are rendered
+    await waitFor(() => {
+      expect(screen.getByText('Post One')).toBeInTheDocument();
+      expect(screen.getByText('Content One')).toBeInTheDocument();
+    });
+  });
 });

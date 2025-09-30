@@ -6,8 +6,8 @@ const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
@@ -109,7 +109,7 @@ function authenticateToken(req, res, next) {
 // Extract token from authorization header
 function extractToken(req) {
     const authHeader = req.headers['authorization'];
-    return authHeader && authHeader.split(' ')[1];
+    return authHeader?.split(' ')[1];
 }
 
 // Verify JWT token
@@ -349,7 +349,7 @@ app.put('/api/user/:id', authenticateToken, async (req, res) => {
 
 // Validate user authorization for update
 function validateUpdateAuthorization(authUser, targetUserId) {
-    const userId = parseInt(targetUserId, 10);
+    const userId = Number.parseInt(targetUserId, 10);
     return authUser.userId === userId || authUser.role === 'admin';
 }
 

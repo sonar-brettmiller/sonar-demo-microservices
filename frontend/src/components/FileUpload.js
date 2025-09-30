@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import axios from 'axios';
 
 const FileUpload = ({ user }) => {
@@ -30,7 +31,7 @@ const FileUpload = ({ user }) => {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await axios.post(
+      await axios.post(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/upload`,
         formData,
         {
@@ -94,6 +95,14 @@ const FileUpload = ({ user }) => {
       )}
     </div>
   );
+};
+
+FileUpload.propTypes = {
+  user: PropTypes.shape({
+    token: PropTypes.string,
+    username: PropTypes.string,
+    role: PropTypes.string
+  })
 };
 
 export default FileUpload;

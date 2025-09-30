@@ -6,7 +6,7 @@ import App from './App';
 // SECURITY HOTSPOT: Global error handler
 // Mitigation: Only logs non-sensitive error information (no cookies/localStorage)
 // Assumption: Error messages do not contain PII
-window.addEventListener('error', (event) => {
+globalThis.addEventListener('error', (event) => {
   console.error('Global error captured:', {
     message: event.message,
     filename: event.filename,
@@ -20,7 +20,7 @@ window.addEventListener('error', (event) => {
 // SECURITY HOTSPOT: Unhandled promise rejection handler
 // Mitigation: Only logs error details without sensitive context
 // Assumption: Promise rejection reasons do not contain tokens/credentials
-window.addEventListener('unhandledrejection', (event) => {
+globalThis.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', {
     reason: event.reason?.message || event.reason,
     stack: event.reason?.stack,
@@ -33,7 +33,7 @@ window.addEventListener('unhandledrejection', (event) => {
 // Mitigation: Only available in development mode, limited functionality
 // Assumption: NODE_ENV is properly set in production builds
 if (process.env.NODE_ENV === 'development') {
-  window.DEBUG = {
+  globalThis.DEBUG = {
     // 🔒 SECURITY: Limited to safe operations in development only
     clearAuthToken: () => {
       localStorage.removeItem('authToken');
@@ -44,7 +44,7 @@ if (process.env.NODE_ENV === 'development') {
   };
 } else {
   // Production: No debug functions exposed
-  window.DEBUG = undefined;
+  globalThis.DEBUG = undefined;
 }
 
 // 🔒 SECURITY: Safe initialization logging
@@ -63,8 +63,8 @@ ReactDOM.render(
 // SECURITY HOTSPOT: Performance measurement
 // Mitigation: Only log non-sensitive timing metrics
 // Assumption: Timing data does not reveal sensitive application behavior
-if ('performance' in window && process.env.NODE_ENV === 'development') {
-  window.addEventListener('load', () => {
+if ('performance' in globalThis && process.env.NODE_ENV === 'development') {
+  globalThis.addEventListener('load', () => {
     setTimeout(() => {
       const perfData = performance.getEntriesByType('navigation')[0];
       if (perfData) {
