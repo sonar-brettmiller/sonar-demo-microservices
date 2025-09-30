@@ -165,6 +165,40 @@ describe('Backend API - Additional Coverage', () => {
 
       expect(response.body).toHaveProperty('error');
     });
+
+    test('should sanitize path traversal attempt to safe basename', async () => {
+      // path.basename('../../etc/passwd') = 'passwd', then file not found
+      const response = await request(app)
+        .get('/api/file?filename=../../etc/passwd')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error', 'File not found');
+    });
+
+    test('should reject null filename', async () => {
+      const response = await request(app)
+        .get('/api/file')
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Invalid filename');
+    });
+
+    test('should reject filename with special characters', async () => {
+      const response = await request(app)
+        .get('/api/file?filename=test<script>.txt')
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Invalid filename characters');
+    });
+
+    test('should sanitize filename to basename only', async () => {
+      const response = await request(app)
+        .get('/api/file?filename=/path/to/file.txt')
+        .expect(404);
+
+      // Should try to read 'file.txt' not '/path/to/file.txt'
+      expect(response.body).toHaveProperty('error');
+    });
   });
 
   describe('System Info Endpoint', () => {

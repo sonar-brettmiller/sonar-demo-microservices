@@ -47,7 +47,11 @@ describe('Index entry point', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Global error captured:',
       expect.objectContaining({
-        message: 'Test error'
+        message: 'Test error',
+        filename: 'test.js',
+        lineno: 1,
+        colno: 1,
+        timestamp: expect.any(String)
       })
     );
   });
@@ -79,6 +83,71 @@ describe('Index entry point', () => {
     // In test mode, DEBUG should be undefined for security
     // React compiles NODE_ENV at build time, so it's 'test' here
     expect(window.DEBUG).toBeUndefined();
+  });
+
+  test('DEBUG functions work in development mode', () => {
+    // Save original NODE_ENV
+    const originalEnv = process.env.NODE_ENV;
+    
+    // Temporarily set to development
+    process.env.NODE_ENV = 'development';
+    
+    // Clear the module cache and reload
+    jest.resetModules();
+    delete require.cache[require.resolve('./index.js')];
+    
+    const div = document.createElement('div');
+    div.id = 'root';
+    document.body.innerHTML = '';
+    document.body.appendChild(div);
+    
+    // Mock localStorage
+    const localStorageMock = {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+      clear: jest.fn()
+    };
+    Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true });
+    
+    require('./index.js');
+    
+    // Verify DEBUG object exists in dev mode
+    expect(window.DEBUG).toBeDefined();
+    expect(typeof window.DEBUG.clearAuthToken).toBe('function');
+    expect(typeof window.DEBUG.getAppVersion).toBe('function');
+    expect(typeof window.DEBUG.isDevMode).toBe('function');
+    
+    // Test DEBUG functions
+    window.DEBUG.clearAuthToken();
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken');
+    
+    const version = window.DEBUG.getAppVersion();
+    expect(version).toBe('1.0.0');
+    
+    expect(window.DEBUG.isDevMode()).toBe(true);
+    
+    // Restore original NODE_ENV
+    process.env.NODE_ENV = originalEnv;
+    jest.resetModules();
+  });
+
+  test('logs app initialization message', () => {
+    // Clear spies and reload module
+    consoleLogSpy.mockClear();
+    
+    // Force module reload
+    jest.resetModules();
+    delete require.cache[require.resolve('./index.js')];
+    
+    const div = document.createElement('div');
+    div.id = 'root';
+    document.body.innerHTML = '';
+    document.body.appendChild(div);
+    
+    require('./index.js');
+    
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('SonarSource Demo App initializing'));
   });
 
   test('module initializes without errors', () => {
