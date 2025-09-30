@@ -70,61 +70,22 @@ describe('Index entry point', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Unhandled promise rejection:',
       expect.objectContaining({
-        reason: testRejection
+        reason: 'Test rejection' // Now logs message only
       })
     );
   });
 
-  test('exposes DEBUG functions globally', () => {
-    const div = document.createElement('div');
-    div.id = 'root';
-    document.body.appendChild(div);
-
-    require('./index.js');
-
-    expect(window.DEBUG).toBeDefined();
-    expect(window.DEBUG.getLocalStorage).toBeInstanceOf(Function);
-    expect(window.DEBUG.getCookies).toBeInstanceOf(Function);
-    expect(window.DEBUG.clearAllData).toBeInstanceOf(Function);
-    expect(window.DEBUG.getUserInfo).toBeInstanceOf(Function);
+  test('DEBUG is not exposed in test/production mode', () => {
+    // In test mode, DEBUG should be undefined for security
+    // React compiles NODE_ENV at build time, so it's 'test' here
+    expect(window.DEBUG).toBeUndefined();
   });
 
-  test('DEBUG.getUserInfo returns user information', () => {
-    const div = document.createElement('div');
-    div.id = 'root';
-    document.body.appendChild(div);
-
-    require('./index.js');
-
-    const userInfo = window.DEBUG.getUserInfo();
-
-    expect(userInfo).toHaveProperty('userAgent');
-    expect(userInfo).toHaveProperty('language');
-    expect(userInfo).toHaveProperty('platform');
-    expect(userInfo).toHaveProperty('cookieEnabled');
-  });
-
-  test('DEBUG.clearAllData clears localStorage and sessionStorage', () => {
-    const div = document.createElement('div');
-    div.id = 'root';
-    document.body.appendChild(div);
-
-    require('./index.js');
-
-    localStorage.setItem('test', 'value');
-    sessionStorage.setItem('test', 'value');
-
-    window.DEBUG.clearAllData();
-
-    expect(localStorage.getItem('test')).toBeNull();
-    expect(sessionStorage.getItem('test')).toBeNull();
-    expect(consoleLogSpy).toHaveBeenCalledWith('Data cleared (cookies still present)');
-  });
-
-  test('logs initialization messages', () => {
-    // These console.logs happen during module load, which already happened
-    // Just verify DEBUG is available
-    expect(window.DEBUG).toBeDefined();
+  test('module initializes without errors', () => {
+    // Verify the module loaded successfully
+    // The module exports render React, which should create the root element
+    const root = document.getElementById('root');
+    expect(root).toBeTruthy();
   });
 
   test('sets up performance monitoring', (done) => {

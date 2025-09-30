@@ -3,61 +3,55 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 
-// ⚠️ SECURITY ISSUE: Global error handler that logs sensitive information
+// SECURITY HOTSPOT: Global error handler
+// Mitigation: Only logs non-sensitive error information (no cookies/localStorage)
+// Assumption: Error messages do not contain PII
 window.addEventListener('error', (event) => {
   console.error('Global error captured:', {
     message: event.message,
     filename: event.filename,
     lineno: event.lineno,
     colno: event.colno,
-    error: event.error,
-    // ⚠️ SECURITY ISSUE: Logging potentially sensitive user agent info
-    userAgent: navigator.userAgent,
-    url: window.location.href,
-    // ⚠️ SECURITY ISSUE: Logging cookies and localStorage
-    cookies: document.cookie,
-    localStorage: JSON.stringify(localStorage),
     timestamp: new Date().toISOString()
+    // 🔒 SECURITY: Removed sensitive data (cookies, localStorage, userAgent)
   });
 });
 
-// ⚠️ SECURITY ISSUE: Global unhandled promise rejection handler
+// SECURITY HOTSPOT: Unhandled promise rejection handler
+// Mitigation: Only logs error details without sensitive context
+// Assumption: Promise rejection reasons do not contain tokens/credentials
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', {
-    reason: event.reason,
-    promise: event.promise,
+    reason: event.reason?.message || event.reason,
     stack: event.reason?.stack,
     timestamp: new Date().toISOString()
+    // 🔒 SECURITY: Limited to error details only
   });
 });
 
-// ⚠️ SECURITY ISSUE: Exposing sensitive debugging functions globally
-window.DEBUG = {
-  getLocalStorage: () => localStorage,
-  getCookies: () => document.cookie,
-  clearAllData: () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    // ⚠️ SECURITY ISSUE: Not actually clearing cookies
-    console.log('Data cleared (cookies still present)');
-  },
-  getUserInfo: () => {
-    return {
-      userAgent: navigator.userAgent,
-      language: navigator.language,
-      platform: navigator.platform,
-      cookieEnabled: navigator.cookieEnabled,
-      onLine: navigator.onLine,
-      doNotTrack: navigator.doNotTrack
-    };
-  }
-};
+// SECURITY HOTSPOT: Debug functions exposed globally
+// Mitigation: Only available in development mode, limited functionality
+// Assumption: NODE_ENV is properly set in production builds
+if (process.env.NODE_ENV === 'development') {
+  window.DEBUG = {
+    // 🔒 SECURITY: Limited to safe operations in development only
+    clearAuthToken: () => {
+      localStorage.removeItem('authToken');
+      console.log('Auth token cleared');
+    },
+    getAppVersion: () => process.env.REACT_APP_VERSION || '1.0.0',
+    isDevMode: () => true
+  };
+} else {
+  // Production: No debug functions exposed
+  window.DEBUG = undefined;
+}
 
-// ⚠️ SECURITY ISSUE: Console logging app initialization with sensitive data
+// 🔒 SECURITY: Safe initialization logging
 console.log('SonarSource Demo App initializing...');
-console.log('App Config:', window.APP_CONFIG);
-console.log('Debug functions available at window.DEBUG');
-console.log('User Info:', window.DEBUG.getUserInfo());
+if (process.env.NODE_ENV === 'development') {
+  console.log('Debug mode enabled. Debug functions available at window.DEBUG');
+}
 
 ReactDOM.render(
   <React.StrictMode>
@@ -66,20 +60,20 @@ ReactDOM.render(
   document.getElementById('root')
 );
 
-// ⚠️ SECURITY ISSUE: Performance measurement that logs timing data
-if ('performance' in window) {
+// SECURITY HOTSPOT: Performance measurement
+// Mitigation: Only log non-sensitive timing metrics
+// Assumption: Timing data does not reveal sensitive application behavior
+if ('performance' in window && process.env.NODE_ENV === 'development') {
   window.addEventListener('load', () => {
     setTimeout(() => {
       const perfData = performance.getEntriesByType('navigation')[0];
-      console.log('Performance data:', {
-        domContentLoaded: perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart,
-        loadComplete: perfData.loadEventEnd - perfData.loadEventStart,
-        // ⚠️ SECURITY ISSUE: Logging potentially sensitive navigation timing
-        redirectStart: perfData.redirectStart,
-        redirectEnd: perfData.redirectEnd,
-        fetchStart: perfData.fetchStart,
-        responseEnd: perfData.responseEnd
-      });
+      if (perfData) {
+        console.log('Performance data:', {
+          domContentLoaded: perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart,
+          loadComplete: perfData.loadEventEnd - perfData.loadEventStart
+          // 🔒 SECURITY: Removed potentially sensitive redirect/fetch timing
+        });
+      }
     }, 0);
   });
 }

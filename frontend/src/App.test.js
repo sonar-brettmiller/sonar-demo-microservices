@@ -295,4 +295,59 @@ describe('App Component', () => {
       expect(axios.get).toHaveBeenCalled();
     });
   });
+
+  test('handles token validation error in fetchUsers', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const mockUserData = {
+      token: 'test-token',
+      user: {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        role: 'admin'
+      }
+    };
+
+    localStorage.setItem('authToken', 'test-token');
+    
+    // First call succeeds (posts), second call succeeds (token validation), 
+    // third call fails (manual fetchUsers click)
+    axios.get
+      .mockResolvedValueOnce({ data: [] }) // posts
+      .mockResolvedValueOnce({ data: [mockUserData.user] }) // token validation
+      .mockRejectedValueOnce(new Error('Fetch users failed')); // manual fetch fails
+
+    render(<App />);
+
+    // Wait for admin panel to appear
+    await waitFor(() => {
+      expect(screen.queryByText(/Admin Panel/i)).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Manually trigger fetchUsers by finding and clicking the button
+    const loadUsersButton = screen.getByRole('button', { name: /Load All Users/i });
+    fireEvent.click(loadUsersButton);
+
+    await waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to fetch users:', expect.any(Error));
+    });
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  test('renders posts correctly when available', async () => {
+    const mockPosts = [
+      { id: 1, title: 'First Post', content: 'First content', author_id: 1 },
+      { id: 2, title: 'Second Post', content: 'Second content', author_id: 1 }
+    ];
+
+    axios.get.mockResolvedValueOnce({ data: mockPosts });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('First Post')).toBeInTheDocument();
+      expect(screen.getByText('First content')).toBeInTheDocument();
+    });
+  });
 });

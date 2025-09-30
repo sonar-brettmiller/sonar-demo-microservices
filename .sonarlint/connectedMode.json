@@ -1,0 +1,5 @@
+{
+    "sonarCloudOrganization": "sonar-brettmiller",
+    "projectKey": "sonar-brettmiller_sonar-demo-microservices",
+    "region": "EU"
+}

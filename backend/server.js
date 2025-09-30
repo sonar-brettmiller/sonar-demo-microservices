@@ -466,19 +466,41 @@ app.get('/api/search', (req, res) => {
  *         schema:
  *           type: string
  */
+// SECURITY HOTSPOT: File download with path validation
+// Mitigation: Filename is sanitized to prevent path traversal
+// Assumption: Files are stored in 'uploads' directory and validated
+function sanitizeFilename(filename) {
+    if (!filename || typeof filename !== 'string') {
+        throw new Error('Invalid filename');
+    }
+    
+    const SAFE_FILENAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
+    const basename = path.basename(filename);
+    
+    if (!SAFE_FILENAME_REGEX.test(basename)) {
+        throw new Error('Invalid filename characters');
+    }
+    
+    return basename;
+}
+
 app.get('/api/file', (req, res) => {
     const { filename } = req.query;
 
-    // ⚠️ SECURITY ISSUE: Path traversal vulnerability
-    const filePath = path.join(__dirname, 'uploads', filename);
-    
-    // ⚠️ SECURITY ISSUE: No validation of file path
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            return res.status(404).json({ error: 'File not found', path: filePath });
-        }
-        res.send(data);
-    });
+    try {
+        // 🔒 SECURITY: Sanitize filename to prevent path traversal
+        const safeFilename = sanitizeFilename(filename);
+        const filePath = path.join(__dirname, 'uploads', safeFilename);
+        
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                return res.status(404).json({ error: 'File not found' });
+            }
+            res.send(data);
+        });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
 });
 
 /**
@@ -504,10 +526,19 @@ app.get('/api/system-info', authenticateToken, (req, res) => {
 // 🔒 SECURITY: Removed dangerous debug endpoint
 // Debug information should never be exposed in production
 
-// ⚠️ SECURITY ISSUE: Unrestricted file upload
+// SECURITY HOTSPOT: File upload endpoint
+// Mitigation: This endpoint is intentionally not implemented to avoid security risks
+// Assumption: File upload functionality would require proper multer configuration with:
+//   - File size limits (MAX_FILE_SIZE: 5MB)
+//   - MIME type restrictions (images and PDFs only)
+//   - Filename sanitization
+// Status: Placeholder only - returns 501 Not Implemented
 app.post('/api/upload', (req, res) => {
-    // Missing file upload handling, but endpoint exists
-    res.json({ message: 'Upload endpoint (not implemented)' });
+    // 🔒 SECURITY: Not implemented to prevent unrestricted uploads
+    res.status(501).json({ 
+        error: 'Upload functionality not implemented',
+        message: 'File upload requires proper security configuration'
+    });
 });
 
 // 🧹 MAINTAINABILITY: Removed complex functions that caused maintainability issues

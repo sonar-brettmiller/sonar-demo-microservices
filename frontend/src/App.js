@@ -96,8 +96,8 @@ function App() {
       
     } catch (error) {
       console.error('Login failed:', error);
-      // ⚠️ SECURITY ISSUE: Exposing error details that might contain sensitive info
-      alert(`Login failed: ${error.response?.data?.error || error.message}`);
+      // 🔒 SECURITY: Safe error message without sensitive information
+      alert('Login failed. Please check your credentials and try again.');
     }
   };
 

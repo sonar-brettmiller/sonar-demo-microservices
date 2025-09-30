@@ -216,9 +216,10 @@ describe('Backend API - Additional Coverage', () => {
     test('should handle upload endpoint (not implemented)', async () => {
       const response = await request(app)
         .post('/api/upload')
-        .expect(200);
+        .expect(501);
 
-      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toBe('Upload functionality not implemented');
     });
   });
 
