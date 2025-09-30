@@ -184,6 +184,32 @@ describe('Backend API - Additional Coverage', () => {
         .get('/api/system-info')
         .expect(401);
     });
+
+    test('should fail for non-admin users', async () => {
+      // Register a regular user
+      await request(app)
+        .post('/api/register')
+        .send({ 
+          username: 'regularuser2',
+          email: 'regular2@example.com',
+          password: 'password123'
+        });
+
+      // Login as regular user
+      const loginResponse = await request(app)
+        .post('/api/login')
+        .send({ username: 'regularuser2', password: 'password123' });
+
+      const regularToken = loginResponse.body.token;
+
+      // Try to access admin endpoint
+      const response = await request(app)
+        .get('/api/system-info')
+        .set('Authorization', `Bearer ${regularToken}`)
+        .expect(403);
+
+      expect(response.body).toHaveProperty('error', 'Admin access required');
+    });
   });
 
   describe('Upload Endpoint', () => {
@@ -193,6 +219,80 @@ describe('Backend API - Additional Coverage', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('Error Handling Coverage', () => {
+    test('should handle database error in registration', async () => {
+      // Send duplicate username to trigger database error
+      await request(app)
+        .post('/api/register')
+        .send({
+          username: 'admin', // Duplicate
+          email: 'duplicate@example.com',
+          password: 'password123'
+        });
+      
+      // Second attempt with same username should fail
+      const response = await request(app)
+        .post('/api/register')
+        .send({
+          username: 'admin',
+          email: 'another@example.com',
+          password: 'password123'
+        })
+        .expect(500);
+
+      expect(response.body).toHaveProperty('error', 'Registration failed');
+    });
+
+    test('should handle database error in login', async () => {
+      const response = await request(app)
+        .post('/api/login')
+        .send({ username: 'nonexistent', password: 'wrong' })
+        .expect(401);
+
+      expect(response.body).toHaveProperty('error', 'Invalid credentials');
+    });
+
+    test('should handle file read error', async () => {
+      const response = await request(app)
+        .get('/api/file?filename=nonexistent.txt')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error', 'File not found');
+    });
+  });
+
+  describe('Profile Update Error Coverage', () => {
+    let adminToken;
+
+    beforeAll(async () => {
+      const loginResponse = await request(app)
+        .post('/api/login')
+        .send({ username: 'admin', password: 'password123' });
+      adminToken = loginResponse.body.token;
+    });
+
+    test('should handle update error when updating non-existent user', async () => {
+      const response = await request(app)
+        .put('/api/user/9999')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ username: 'nonexistent' })
+        .expect(500);
+
+      expect(response.body).toHaveProperty('error', 'Profile update failed');
+    });
+
+    test('should handle validation error for whitespace-only input', async () => {
+      // Whitespace-only input should be caught by validation
+      const response = await request(app)
+        .put('/api/user/1')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ username: '  ', email: '  ' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Invalid input data');
     });
   });
 });
