@@ -9,11 +9,18 @@ describe('App Component', () => {
   beforeEach(() => {
     localStorage.clear();
     jest.clearAllMocks();
+    // Mock axios.get to always return empty posts by default
+    axios.get.mockResolvedValue({ data: [] });
   });
 
-  test('renders login form when not authenticated', () => {
+  test('renders login form when not authenticated', async () => {
     render(<App />);
     expect(screen.getByText(/Login to Demo App/i)).toBeInTheDocument();
+    
+    // Wait for initial fetch to complete
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenCalled();
+    });
   });
 
   test('fetches posts on mount', async () => {

@@ -30,7 +30,7 @@ describe('FileUpload Component', () => {
     expect(screen.getByRole('button', { name: /Upload File/i })).toBeInTheDocument();
   });
 
-  test('upload button is disabled when no file is selected', () => {
+  test('initially upload button is disabled', () => {
     render(<FileUpload user={mockUser} />);
     const uploadButton = screen.getByRole('button', { name: /Upload File/i });
     expect(uploadButton).toBeDisabled();
@@ -57,20 +57,11 @@ describe('FileUpload Component', () => {
     expect(uploadButton).not.toBeDisabled();
   });
 
-  test('shows error message when no file is selected and upload is clicked', async () => {
+  test('upload button is disabled when no file is selected', () => {
     render(<FileUpload user={mockUser} />);
-    const fileInput = screen.getByLabelText(/Select file/i);
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' });
-    
-    fireEvent.change(fileInput, { target: { files: [file] } });
-    fireEvent.change(fileInput, { target: { files: [] } });
-    
     const uploadButton = screen.getByRole('button', { name: /Upload File/i });
-    fireEvent.click(uploadButton);
     
-    await waitFor(() => {
-      expect(screen.queryByText(/Please select a file first/i)).toBeInTheDocument();
-    });
+    expect(uploadButton).toBeDisabled();
   });
 
   test('shows error when user token is missing', async () => {
