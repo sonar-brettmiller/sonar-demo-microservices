@@ -53,7 +53,7 @@ jobs:
           python -m pytest --cov=app --cov-report=xml:coverage.xml --cov-report=term-missing
       
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
