@@ -16,3 +16,12 @@ Refer to those files for specific quality standards.
 - **Maintainability Standards**: See `.cursor/rules/maintainability.mdc`
 - **Security Standards**: See `.cursor/rules/security.mdc`
 - **AI Workflow**: See `.cursor/rules/ai-workflow.mdc`
+- **🤖 AI+SonarQube Workflow**: See `.cursor/rules/ai-sonarqube-workflow.mdc`
+
+## AI-First Development
+When generating new code, the AI will automatically:
+1. Query SonarQube MCP for current quality metrics
+2. Use Context7 to learn best practices
+3. Generate code + tests that meet quality gates
+4. Validate against SonarQube standards before presenting
+5. Iterate until quality gate conditions are met

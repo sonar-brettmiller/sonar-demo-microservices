@@ -1,0 +1,399 @@
+---
+alwaysApply: true
+---
+
+# AI-Focused SonarQube Quality Gate Workflow
+
+**Purpose:** Ensure all AI-generated code passes SonarQube quality gates before commit
+
+**Project Quality Gate:** Sonar way (Default)
+- new_security_rating ≤ 1 (A)
+- new_reliability_rating ≤ 1 (A)
+- new_maintainability_rating ≤ 1 (A)
+- new_coverage ≥ 80%
+- new_duplicated_lines_density ≤ 3%
+- new_security_hotspots_reviewed = 100%
+
+---
+
+## 🤖 Pre-Generation Phase: Context Gathering
+
+### Step 1: Query SonarQube for Current State
+**Before generating any code**, use SonarQube MCP tools:
+
+```
+1. Check quality gate status:
+   mcp_sonarqube_get_project_quality_gate_status(projectKey)
+
+2. Get current component measures:
+   mcp_sonarqube_get_component_measures(component, metricKeys)
+   
+3. Search for existing issues:
+   mcp_sonarqube_search_sonar_issues_in_projects(projects)
+```
+
+**AI Action:** Understand baseline quality before making changes
+
+### Step 2: Use Context7 for Knowledge Enhancement
+**Query Context7** for SonarQube rule knowledge:
+
+```
+Topics to search:
+- "SonarQube cognitive complexity best practices"
+- "SonarQube code smell patterns in [language]"
+- "Promise-based error handling patterns"
+- "Test coverage strategies for [framework]"
+```
+
+**AI Action:** Enrich understanding of quality patterns
+
+---
+
+## ✍️ Generation Phase: AI Code Creation
+
+### Step 3: Apply Quality-First Generation Rules
+
+**MANDATORY for ALL generated code:**
+
+#### A. Maintainability (Rating A)
+```javascript
+// ✅ ALWAYS: Keep functions ≤20 lines
+// ✅ ALWAYS: Cognitive complexity ≤15
+// ✅ ALWAYS: Extract helper functions
+// ✅ ALWAYS: Use named constants (no magic numbers)
+// ✅ ALWAYS: Meaningful variable names
+
+// Example:
+function processPayment(amount, userId) {
+  const validated = validateAmount(amount);     // Helper function
+  const user = fetchUser(userId);               // Helper function
+  return createTransaction(validated, user);    // Helper function
+}
+```
+
+#### B. Test Coverage (≥80%)
+```javascript
+// ✅ ALWAYS: Generate tests ALONGSIDE implementation
+// ✅ ALWAYS: Test all branches (if/else, switch)
+// ✅ ALWAYS: Test error cases
+// ✅ ALWAYS: Test edge cases (null, undefined, empty)
+
+// Example:
+// When generating getUserById(id)
+// ALSO generate:
+test('should return user when ID exists', () => {...});
+test('should throw error when ID is null', () => {...});
+test('should return null when user not found', () => {...});
+```
+
+#### C. Security (Rating A)
+```javascript
+// ✅ ALWAYS: Validate inputs
+// ✅ ALWAYS: Use parameterized queries
+// ✅ ALWAYS: Use environment variables for secrets
+// ✅ ALWAYS: Avoid eval(), exec(), Function()
+
+// Example:
+function queryUser(username) {
+  // ✅ Parameterized query
+  return db.query('SELECT * FROM users WHERE name = ?', [username]);
+  
+  // ❌ NEVER do this:
+  // return db.query(`SELECT * FROM users WHERE name = '${username}'`);
+}
+```
+
+#### D. Reliability (Rating A)
+```javascript
+// ✅ ALWAYS: Use try/catch for operations that can fail
+// ✅ ALWAYS: Validate function inputs
+// ✅ ALWAYS: Use optional chaining (?.)
+// ✅ ALWAYS: Return meaningful errors
+
+// Example:
+async function fetchData(url) {
+  if (!url || typeof url !== 'string') {
+    throw new Error('Valid URL required');
+  }
+  
+  try {
+    const response = await fetch(url);
+    return response?.data ?? [];
+  } catch (error) {
+    console.error('Fetch failed:', error.message);
+    throw new Error('Failed to fetch data');
+  }
+}
+```
+
+---
+
+## 🔍 Validation Phase: Pre-Commit Checks
+
+### Step 4: Self-Review Generated Code
+
+**AI MUST check before presenting code:**
+
+```markdown
+Checklist:
+- [ ] Functions are ≤20 lines each
+- [ ] No nested if/else >3 levels deep
+- [ ] All magic numbers replaced with constants
+- [ ] No duplicated code blocks
+- [ ] Tests written for all functions
+- [ ] Tests cover all branches
+- [ ] Error handling present
+- [ ] No hardcoded secrets
+- [ ] Input validation added
+- [ ] No unused imports
+```
+
+### Step 5: Run Local Tests
+**Command to verify:**
+```bash
+# Backend
+cd backend && npm test -- --coverage
+
+# Frontend
+cd frontend && npm test -- --coverage --watchAll=false
+
+# Python
+cd python-service && pytest --cov=. tests/
+```
+
+**AI checks:**
+- ✅ All tests pass
+- ✅ Coverage ≥80% for new code
+- ✅ No test failures
+
+---
+
+## 📊 Analysis Phase: SonarQube Verification
+
+### Step 6: Use SonarQube MCP for Validation
+
+**After code generation, query SonarQube:**
+
+```javascript
+// 1. Get new code metrics
+const measures = mcp_sonarqube_get_component_measures({
+  component: "file-path",
+  metricKeys: [
+    "new_coverage",
+    "new_code_smells", 
+    "new_bugs",
+    "new_vulnerabilities",
+    "cognitive_complexity"
+  ]
+});
+
+// 2. Check for new issues
+const issues = mcp_sonarqube_search_sonar_issues_in_projects({
+  projects: ["project-key"]
+});
+
+// 3. Verify quality gate
+const qgStatus = mcp_sonarqube_get_project_quality_gate_status({
+  projectKey: "project-key"
+});
+```
+
+**AI evaluates:**
+- Is new_coverage ≥ 80%?
+- Is new_code_smells = 0?
+- Is new_maintainability_rating = 1?
+
+---
+
+## 🔄 Iteration Phase: Fix Issues
+
+### Step 7: Address SonarQube Findings
+
+**If issues found:**
+
+1. **Use Context7** to learn fix patterns:
+   ```
+   Query: "How to fix SonarQube rule [RULE_KEY]"
+   ```
+
+2. **Use mcp_sonarqube_show_rule** for details:
+   ```javascript
+   mcp_sonarqube_show_rule({ key: "javascript:S1541" })
+   ```
+
+3. **Refactor based on rule guidance**
+
+4. **Re-run tests**
+
+5. **Re-check with SonarQube MCP**
+
+**Iteration loop until:**
+- All quality gates pass
+- Coverage ≥ 80%
+- Zero new code smells
+
+---
+
+## 🎯 Best Practices for AI Code Generation
+
+### Pattern 1: Promisify Callbacks
+```javascript
+// ❌ AVOID: Callback hell (high cognitive complexity)
+function getData(id, callback) {
+  db.get(id, (err, data) => {
+    if (err) callback(err);
+    else callback(null, data);
+  });
+}
+
+// ✅ PREFER: Promise-based (lower complexity)
+function getData(id) {
+  return new Promise((resolve, reject) => {
+    db.get(id, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+}
+```
+
+### Pattern 2: Early Returns
+```javascript
+// ❌ AVOID: Nested conditionals
+function validate(user) {
+  if (user) {
+    if (user.age > 18) {
+      if (user.email) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// ✅ PREFER: Early returns (lower complexity)
+function validate(user) {
+  if (!user) return false;
+  if (user.age <= 18) return false;
+  if (!user.email) return false;
+  return true;
+}
+```
+
+### Pattern 3: Extract Functions
+```javascript
+// ❌ AVOID: Long function
+function processOrder(order) {
+  // 50 lines of validation, calculation, and saving
+}
+
+// ✅ PREFER: Multiple small functions
+function processOrder(order) {
+  const validated = validateOrder(order);
+  const total = calculateTotal(validated);
+  return saveOrder(validated, total);
+}
+
+function validateOrder(order) { /* ≤10 lines */ }
+function calculateTotal(order) { /* ≤10 lines */ }
+function saveOrder(order, total) { /* ≤10 lines */ }
+```
+
+---
+
+## 🛡️ Security Hotspot Documentation
+
+When generating code with security-sensitive operations:
+
+```javascript
+// SECURITY HOTSPOT: JWT token generation
+// Mitigation: 
+//   - Tokens expire in 24 hours
+//   - Secret stored in environment variable
+//   - HTTPS enforced by infrastructure
+// Assumption: JWT_SECRET has sufficient entropy (≥256 bits)
+function generateToken(user) {
+  const TOKEN_EXPIRY = '24h';
+  return jwt.sign(
+    { userId: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: TOKEN_EXPIRY }
+  );
+}
+```
+
+**Required documentation:**
+- Why this approach was chosen
+- What mitigations are in place
+- Security assumptions
+
+---
+
+## 📝 AI Workflow Summary
+
+```mermaid
+1. Query SonarQube MCP → Get baseline metrics
+2. Query Context7 → Learn best practices
+3. Generate code → Apply quality rules
+4. Generate tests → Ensure ≥80% coverage
+5. Self-review → Check quality checklist
+6. Run tests → Verify passing + coverage
+7. Query SonarQube MCP → Validate quality
+8. Fix issues → Iterate until passing
+9. Commit → Quality gate passes ✅
+```
+
+---
+
+## 🎓 Context7 Query Templates
+
+**For learning SonarQube rules:**
+- "SonarQube rule {RULE_KEY} explanation and examples"
+- "How to fix cognitive complexity in {language}"
+- "Best practices for test coverage in {framework}"
+
+**For implementation patterns:**
+- "Error handling patterns that pass SonarQube"
+- "Async/await best practices for maintainability"
+- "How to avoid code duplication in {language}"
+
+**For security:**
+- "SonarQube security hotspots in {technology}"
+- "Secure coding patterns for {use-case}"
+- "Input validation strategies for {framework}"
+
+---
+
+## ⚡ Quick Reference Commands
+
+**Check quality gate:**
+```javascript
+mcp_sonarqube_get_project_quality_gate_status({
+  projectKey: "sonar-brettmiller_sonar-demo-microservices"
+})
+```
+
+**Get file metrics:**
+```javascript
+mcp_sonarqube_get_component_measures({
+  component: "project:path/to/file.js",
+  metricKeys: ["new_coverage", "new_code_smells", "cognitive_complexity"]
+})
+```
+
+**Learn about a rule:**
+```javascript
+mcp_sonarqube_show_rule({
+  key: "javascript:S1541" // Example: Cognitive Complexity
+})
+```
+
+**Search Context7:**
+```javascript
+// Query for best practices and patterns
+"SonarQube maintainability best practices in Node.js"
+```
+
+---
+
+**Remember:** Quality gates are enforced PRE-COMMIT. Generate code that passes the first time by following these workflows!

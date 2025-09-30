@@ -294,14 +294,123 @@ app.get('/api/user/:id', (req, res) => {
         }
 
         // 🔒 SECURITY: Only expose safe user data
-        res.json({
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role
-        });
+        res.json(sanitizeUserData(user));
     });
 });
+
+/**
+ * @swagger
+ * /api/user/{id}:
+ *   put:
+ *     summary: Update user profile
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ */
+app.put('/api/user/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { username, email } = req.body;
+
+    if (!validateUpdateAuthorization(req.user, id)) {
+        return res.status(403).json({ error: 'Not authorized to update this profile' });
+    }
+
+    if (!validateProfileInput(username, email)) {
+        return res.status(400).json({ error: 'Invalid input data' });
+    }
+
+    try {
+        const updatedUser = await updateUserProfile(id, username, email);
+        res.json({
+            message: 'Profile updated successfully',
+            user: sanitizeUserData(updatedUser)
+        });
+    } catch (error) {
+        console.error('Profile update failed:', error.message);
+        res.status(500).json({ error: 'Profile update failed' });
+    }
+});
+
+// Validate user authorization for update
+function validateUpdateAuthorization(authUser, targetUserId) {
+    const userId = parseInt(targetUserId, 10);
+    return authUser.userId === userId || authUser.role === 'admin';
+}
+
+// Validate profile update input
+function validateProfileInput(username, email) {
+    if (!username && !email) return false;
+    if (username && (typeof username !== 'string' || username.trim().length < 3)) return false;
+    if (email && !validateEmailFormat(email.trim())) return false;
+    return true;
+}
+
+// Validate email format
+function validateEmailFormat(email) {
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return EMAIL_REGEX.test(email);
+}
+
+// Update user profile in database
+function updateUserProfile(userId, username, email) {
+    return new Promise((resolve, reject) => {
+        const updates = [];
+        const params = [];
+
+        if (username) {
+            updates.push('username = ?');
+            params.push(username.trim());
+        }
+        if (email) {
+            updates.push('email = ?');
+            params.push(email.trim());
+        }
+
+        if (updates.length === 0) {
+            return reject(new Error('No fields to update'));
+        }
+
+        params.push(userId);
+        const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+
+        db.run(query, params, function(err) {
+            if (err) {
+                reject(err);
+            } else if (this.changes === 0) {
+                reject(new Error('User not found'));
+            } else {
+                getUserById(userId).then(resolve).catch(reject);
+            }
+        });
+    });
+}
+
+// Get user by ID (Promise-based)
+function getUserById(userId) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM users WHERE id = ?';
+        db.get(query, [userId], (err, user) => {
+            if (err) reject(err);
+            else resolve(user);
+        });
+    });
+}
 
 /**
  * @swagger
