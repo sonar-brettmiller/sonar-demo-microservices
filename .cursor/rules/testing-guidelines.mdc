@@ -2,4 +2,196 @@
 alwaysApply: true
 ---
 
-When running test suites, make sure that they are actually passing - check the terminal output. If they are not passing, notify me and keep note of it. If possible, we will try to fix the test.
+# Testing Guidelines (Coverage ≥80%)
+
+**Target:** New Coverage ≥ 80%  
+**Current Status:** ❌ FAILING (75% - needs ≥80%)
+
+## Coverage Requirements
+
+### Every New Function Needs Tests
+- **Minimum:** 1 test per function
+- **Target:** ≥80% line coverage AND ≥80% branch coverage
+
+### Test Locations
+- **Backend:** `backend/__tests__/*.test.js`
+- **Frontend:** `frontend/src/**/*.test.js`
+- **Python:** `python-service/tests/test_*.py`
+
+### Test Frameworks
+- **Backend:** Jest
+- **Frontend:** Jest + React Testing Library
+- **Python:** pytest
+
+## What to Test
+
+### 1. Happy Path (Expected Behavior)
+```javascript
+// Example: User registration
+test('should register a new user with valid data', () => {
+  const user = registerUser({ email: 'test@example.com', password: 'secure123' });
+  expect(user).toHaveProperty('id');
+  expect(user.email).toBe('test@example.com');
+});
+```
+
+### 2. Error Cases (Invalid Input)
+```javascript
+test('should throw error when email is missing', () => {
+  expect(() => registerUser({ password: 'secure123' }))
+    .toThrow('Email is required');
+});
+
+test('should return null when user not found', () => {
+  const user = findUserById('nonexistent-id');
+  expect(user).toBeNull();
+});
+```
+
+### 3. Edge Cases (Boundary Values)
+```javascript
+test('should handle empty array', () => {
+  const result = processUsers([]);
+  expect(result).toEqual([]);
+});
+
+test('should handle undefined input', () => {
+  const result = formatName(undefined);
+  expect(result).toBe('');
+});
+```
+
+### 4. Async Behavior (Success + Failure)
+```javascript
+test('should fetch user data successfully', async () => {
+  const user = await fetchUser('123');
+  expect(user).toBeDefined();
+});
+
+test('should handle API errors gracefully', async () => {
+  await expect(fetchUser('invalid'))
+    .rejects.toThrow('User not found');
+});
+```
+
+### 5. All Code Branches (if/else, switch)
+```javascript
+// Function with branches
+function getDiscount(user) {
+  if (user.isPremium) return 0.20;
+  if (user.orders > 5) return 0.10;
+  return 0;
+}
+
+// Tests covering all branches
+test('should apply 20% discount for premium users', () => {
+  expect(getDiscount({ isPremium: true })).toBe(0.20);
+});
+
+test('should apply 10% discount for repeat customers', () => {
+  expect(getDiscount({ isPremium: false, orders: 6 })).toBe(0.10);
+});
+
+test('should apply no discount for new customers', () => {
+  expect(getDiscount({ isPremium: false, orders: 0 })).toBe(0);
+});
+```
+
+## Test Patterns
+
+### React Component Testing
+```javascript
+import { render, screen, fireEvent } from '@testing-library/react';
+
+test('should display user name when provided', () => {
+  render(<UserProfile name="Alice" />);
+  expect(screen.getByText('Alice')).toBeInTheDocument();
+});
+
+test('should call onClick when button is clicked', () => {
+  const handleClick = jest.fn();
+  render(<Button onClick={handleClick} />);
+  fireEvent.click(screen.getByRole('button'));
+  expect(handleClick).toHaveBeenCalledTimes(1);
+});
+```
+
+### Error Handling Testing
+```javascript
+test('should handle try/catch errors', async () => {
+  // Mock a function that throws
+  jest.spyOn(api, 'fetchData').mockRejectedValue(new Error('Network error'));
+  
+  const result = await fetchWithRetry();
+  expect(result).toBeNull(); // Graceful fallback
+});
+```
+
+### Python Testing (pytest)
+```python
+def test_calculate_total_with_valid_items():
+    items = [{'price': 10}, {'price': 20}]
+    assert calculate_total(items) == 30
+
+def test_calculate_total_with_empty_list():
+    assert calculate_total([]) == 0
+
+def test_calculate_total_raises_error_on_invalid_input():
+    with pytest.raises(ValueError):
+        calculate_total(None)
+```
+
+## AI Workflow for Testing
+
+### When Writing New Code:
+1. ✅ Write the implementation
+2. ✅ **Immediately write tests** (don't wait)
+3. ✅ Ensure all branches are covered
+4. ✅ Run tests to verify they pass
+5. ✅ Check coverage report (aim for >80%)
+
+### When Adding to Existing Files:
+1. ✅ Identify new branches added by your code
+2. ✅ Add tests for those new branches
+3. ✅ Update existing tests if behavior changed
+4. ✅ Maintain or improve existing coverage
+
+### Before Presenting Code:
+- ✅ Show implementation + tests together
+- ✅ Confirm all tests pass
+- ✅ State coverage achieved (e.g., "95% line coverage, 90% branch coverage")
+
+## Coverage Verification
+
+### Run Tests Locally:
+```bash
+# Backend
+cd backend && npm test -- --coverage
+
+# Frontend
+cd frontend && npm test -- --coverage
+
+# Python
+cd python-service && pytest --cov=. tests/
+```
+
+### Coverage Reports Located At:
+- Backend: `backend/coverage/lcov.info`
+- Frontend: `frontend/coverage/lcov.info`
+- Python: `python-service/coverage.xml`
+
+## Quality Check
+
+**After running tests, verify:**
+1. ✅ All tests pass (no failures or errors)
+2. ✅ Coverage ≥80% for new/modified code
+3. ✅ No console errors or warnings
+4. ✅ Tests are meaningful (not just dummy assertions)
+
+**If tests fail:**
+- ❌ Do NOT ignore or suppress failures
+- ✅ Notify the user immediately
+- ✅ Debug and fix the issue
+- ✅ Re-run tests to confirm fix
+
+**Remember:** Tests are non-negotiable. Every new function must have tests to achieve ≥80% coverage.

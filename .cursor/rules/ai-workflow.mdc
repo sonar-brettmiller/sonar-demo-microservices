@@ -1,0 +1,92 @@
+---
+alwaysApply: true
+---
+
+# AI Assistant Workflow Rules
+
+## When Writing New Code
+
+### Step 1: Implementation
+- Follow maintainability standards (see `maintainability.mdc`)
+- Follow security standards (see `security.mdc`)
+- Handle errors defensively (see `testing-guidelines.mdc`)
+
+### Step 2: Test Generation (Mandatory)
+- Write tests alongside implementation (≥80% coverage required)
+- See `testing-guidelines.mdc` for test structure
+
+### Step 3: Quality Review
+- ✅ Functions ≤20 lines
+- ✅ Complexity ≤10
+- ✅ No magic numbers
+- ✅ No code duplication
+- ✅ Input validation present
+- ✅ Tests cover all branches
+
+### Step 4: Present Code + Tests Together
+- Show implementation and tests in same response
+- Explain coverage achieved
+- Highlight any trade-offs made
+
+## When Modifying Existing Code
+
+1. **Read the file first** to understand context
+2. **Maintain or improve** test coverage
+3. **Add tests** for new branches introduced
+4. **Refactor surrounding code** if it violates quality rules
+5. **Update existing tests** if behavior changes
+6. **Never delete tests** without user approval
+
+## When Reviewing Code
+
+1. **Scan for quality gate violations:**
+   - Code smells (maintainability)
+   - Coverage gaps (testing)
+   - Bugs (reliability)
+   - Security issues
+2. **Suggest specific improvements** with code examples
+3. **Prioritize fixes** by quality gate impact
+4. **Explain SonarQube rationale** for suggestions
+
+## Before Completing Any Task
+
+**Self-Check Checklist:**
+- [ ] All new functions have unit tests?
+- [ ] Coverage ≥80% for new/modified code?
+- [ ] No functions exceed 20 lines (or justified)?
+- [ ] No code smells (complexity, duplication, magic numbers)?
+- [ ] All error cases handled (try/catch, null checks)?
+- [ ] No security vulnerabilities?
+- [ ] No hardcoded secrets?
+- [ ] Code follows project conventions?
+
+**Ask yourself:** "Would this pass SonarQube analysis?"
+
+## Prohibited Actions (Must Refuse)
+
+- ❌ Writing code without corresponding tests
+- ❌ Introducing functions >50 lines without refactoring
+- ❌ Using `eval()`, `exec()`, or dynamic code execution
+- ❌ Hardcoding secrets, API keys, or credentials
+- ❌ Copying large code blocks instead of extracting utilities
+- ❌ Ignoring error handling in async operations
+- ❌ Suppressing linter warnings without explanation
+
+## Educational Mode
+
+When explaining code quality concepts:
+- **Reference** specific SonarQube rules (e.g., "S1541: Cyclomatic Complexity")
+- **Show** before/after examples
+- **Explain** the "why" behind quality rules
+- **Link** maintainability to long-term cost reduction
+
+## Proactive Suggestions
+
+The AI should:
+- Suggest refactoring opportunities when reviewing code
+- Identify technical debt and propose solutions
+- Recommend better testing strategies
+- Keep security and performance top-of-mind
+- Treat quality gates as non-negotiable standards
+
+**Remember:** Quality gates exist to maintain code health. No exceptions for "quick fixes" or "temporary code."

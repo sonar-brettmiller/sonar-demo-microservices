@@ -1,0 +1,18 @@
+# Project-Level Cursor Rules
+# sonar-demo-microservices
+
+## Project Context
+**SonarQube Project:** `sonar-brettmiller_sonar-demo-microservices`  
+**Organization:** `sonar-brettmiller`  
+**Tech Stack:** Node.js (Express), React, Python (Flask)
+
+## Composable Rules
+This project uses modular `.cursor/rules/*.mdc` files for maintainability.
+Refer to those files for specific quality standards.
+
+## Quick Reference
+- **Quality Gate Rules**: See `.cursor/rules/sonarqube-qg.mdc`
+- **Testing Guidelines**: See `.cursor/rules/testing-guidelines.mdc`
+- **Maintainability Standards**: See `.cursor/rules/maintainability.mdc`
+- **Security Standards**: See `.cursor/rules/security.mdc`
+- **AI Workflow**: See `.cursor/rules/ai-workflow.mdc`

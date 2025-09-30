@@ -95,19 +95,27 @@ const swaggerOptions = {
 const specs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
-// ⚠️ SECURITY ISSUE: Unsafe authentication middleware
+// 🔒 SECURITY: Safe authentication middleware
 function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = extractToken(req);
+    if (!token) return res.sendStatus(401);
 
-    if (token == null) return res.sendStatus(401);
-
-    // ⚠️ SECURITY ISSUE: Using hardcoded secret for JWT verification
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    verifyToken(token, (err, user) => {
         if (err) return res.sendStatus(403);
         req.user = user;
         next();
     });
+}
+
+// Extract token from authorization header
+function extractToken(req) {
+    const authHeader = req.headers['authorization'];
+    return authHeader && authHeader.split(' ')[1];
+}
+
+// Verify JWT token
+function verifyToken(token, callback) {
+    jwt.verify(token, JWT_SECRET, callback);
 }
 
 /**
@@ -132,36 +140,46 @@ function authenticateToken(req, res, next) {
 app.post('/api/register', async (req, res) => {
     const { username, email, password } = req.body;
 
-    // ⚠️ SECURITY ISSUE: No input validation
-    if (!username || !password) {
+    if (!validateRegistrationInput(username, password)) {
         return res.status(400).json({ error: 'Username and password are required' });
     }
 
     try {
-        // ⚠️ SECURITY ISSUE: Weak password hashing (low salt rounds)
-        const hashedPassword = await bcrypt.hash(password, 5);
-        
-        // 🔒 SECURITY: Using parameterized query to prevent SQL injection
-        const query = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
-        
-        db.run(query, [username, email, hashedPassword], function(err) {
-            if (err) {
-                // 🔒 SECURITY: Safe error handling without information disclosure
-                return res.status(500).json({ error: 'Registration failed' });
-            }
-            
-            // 🔒 SECURITY: Safe logging without sensitive data
-            console.log(`New user registered: ${username}`);
-            
-            res.status(201).json({ 
-                message: 'User registered successfully',
-                userId: this.lastID
-            });
-        });
+        const hashedPassword = await hashPassword(password);
+        await createUser(username, email, hashedPassword, res);
     } catch (error) {
         res.status(500).json({ error: 'Registration failed' });
     }
 });
+
+// Validate registration input
+function validateRegistrationInput(username, password) {
+    return username && password;
+}
+
+// Hash password securely
+async function hashPassword(password) {
+    const SALT_ROUNDS = 10;
+    return await bcrypt.hash(password, SALT_ROUNDS);
+}
+
+// Create user in database
+function createUser(username, email, hashedPassword, res) {
+    const query = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
+    
+    db.run(query, [username, email, hashedPassword], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Registration failed' });
+        }
+        
+        console.log(`New user registered: ${username}`);
+        
+        res.status(201).json({ 
+            message: 'User registered successfully',
+            userId: this.lastID
+        });
+    });
+}
 
 /**
  * @swagger
@@ -182,8 +200,6 @@ app.post('/api/register', async (req, res) => {
  */
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-
-    // 🔒 SECURITY: Using parameterized query to prevent SQL injection
     const query = `SELECT * FROM users WHERE username = ?`;
     
     db.get(query, [username], async (err, user) => {
@@ -191,30 +207,44 @@ app.post('/api/login', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
 
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            // 🔒 SECURITY: Generic error message to prevent user enumeration
+        const isValid = await validateCredentials(user, password);
+        if (!isValid) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // ⚠️ SECURITY ISSUE: JWT with hardcoded secret and long expiration
-        const token = jwt.sign(
-            { userId: user.id, username: user.username, role: user.role },
-            JWT_SECRET,
-            { expiresIn: '30d' }
-        );
-
-        // 🔒 SECURITY: Safe response without sensitive data
+        const token = generateAuthToken(user);
         res.json({
             token,
-            user: {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                role: user.role
-            }
+            user: sanitizeUserData(user)
         });
     });
 });
+
+// Validate user credentials
+async function validateCredentials(user, password) {
+    if (!user) return false;
+    return await bcrypt.compare(password, user.password);
+}
+
+// Generate JWT token
+function generateAuthToken(user) {
+    const TOKEN_EXPIRY = '24h';
+    return jwt.sign(
+        { userId: user.id, username: user.username, role: user.role },
+        JWT_SECRET,
+        { expiresIn: TOKEN_EXPIRY }
+    );
+}
+
+// Sanitize user data for response
+function sanitizeUserData(user) {
+    return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+    };
+}
 
 /**
  * @swagger

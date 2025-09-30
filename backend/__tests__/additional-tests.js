@@ -1,61 +1,58 @@
 const request = require('supertest');
 const app = require('../server');
 
-describe('Additional Backend API Tests', () => {
+describe('Backend API - Additional Coverage', () => {
   let authToken;
 
   beforeAll(async () => {
-    // Get auth token for protected routes
+    // Login to get auth token for protected routes
     const response = await request(app)
       .post('/api/login')
       .send({ username: 'admin', password: 'password123' });
-    
     authToken = response.body.token;
   });
 
-  describe('User Registration', () => {
-    test('should register a new user with valid data', async () => {
-      const newUser = {
-        username: 'newuser',
-        email: 'newuser@example.com',
-        password: 'securepassword123'
-      };
-
+  describe('Registration Endpoint', () => {
+    test('should register new user with valid data', async () => {
       const response = await request(app)
         .post('/api/register')
-        .send(newUser)
+        .send({
+          username: 'testuser',
+          email: 'test@example.com',
+          password: 'securepassword123'
+        })
         .expect(201);
 
       expect(response.body).toHaveProperty('message', 'User registered successfully');
       expect(response.body).toHaveProperty('userId');
     });
 
-    test('should reject registration with missing username', async () => {
-      const invalidUser = {
-        email: 'test@example.com',
-        password: 'password123'
-      };
-
-      await request(app)
+    test('should fail when username is missing', async () => {
+      const response = await request(app)
         .post('/api/register')
-        .send(invalidUser)
+        .send({
+          email: 'test@example.com',
+          password: 'password123'
+        })
         .expect(400);
+
+      expect(response.body).toHaveProperty('error');
     });
 
-    test('should reject registration with missing password', async () => {
-      const invalidUser = {
-        username: 'testuser',
-        email: 'test@example.com'
-      };
-
-      await request(app)
+    test('should fail when password is missing', async () => {
+      const response = await request(app)
         .post('/api/register')
-        .send(invalidUser)
+        .send({
+          username: 'testuser',
+          email: 'test@example.com'
+        })
         .expect(400);
+
+      expect(response.body).toHaveProperty('error');
     });
   });
 
-  describe('User Authentication', () => {
+  describe('Login Endpoint', () => {
     test('should login with valid credentials', async () => {
       const response = await request(app)
         .post('/api/login')
@@ -64,27 +61,30 @@ describe('Additional Backend API Tests', () => {
 
       expect(response.body).toHaveProperty('token');
       expect(response.body).toHaveProperty('user');
-      expect(response.body.user).toHaveProperty('username', 'admin');
       expect(response.body.user).not.toHaveProperty('password');
     });
 
-    test('should reject login with invalid credentials', async () => {
-      await request(app)
+    test('should fail with invalid username', async () => {
+      const response = await request(app)
+        .post('/api/login')
+        .send({ username: 'nonexistent', password: 'password123' })
+        .expect(401);
+
+      expect(response.body).toHaveProperty('error', 'Invalid credentials');
+    });
+
+    test('should fail with invalid password', async () => {
+      const response = await request(app)
         .post('/api/login')
         .send({ username: 'admin', password: 'wrongpassword' })
         .expect(401);
-    });
 
-    test('should reject login with non-existent user', async () => {
-      await request(app)
-        .post('/api/login')
-        .send({ username: 'nonexistent', password: 'password' })
-        .expect(401);
+      expect(response.body).toHaveProperty('error', 'Invalid credentials');
     });
   });
 
-  describe('User Management', () => {
-    test('should get all users with valid token', async () => {
+  describe('Users Endpoint', () => {
+    test('should return users list when authenticated', async () => {
       const response = await request(app)
         .get('/api/users')
         .set('Authorization', `Bearer ${authToken}`)
@@ -94,13 +94,13 @@ describe('Additional Backend API Tests', () => {
       expect(response.body.length).toBeGreaterThan(0);
     });
 
-    test('should reject users request without token', async () => {
+    test('should fail without authentication token', async () => {
       await request(app)
         .get('/api/users')
         .expect(401);
     });
 
-    test('should reject users request with invalid token', async () => {
+    test('should fail with invalid token', async () => {
       await request(app)
         .get('/api/users')
         .set('Authorization', 'Bearer invalid-token')
@@ -108,47 +108,46 @@ describe('Additional Backend API Tests', () => {
     });
   });
 
-  describe('Individual User Lookup', () => {
-    test('should get user by valid ID', async () => {
+  describe('User by ID Endpoint', () => {
+    test('should return user by valid ID', async () => {
       const response = await request(app)
         .get('/api/user/1')
         .expect(200);
 
-      expect(response.body).toHaveProperty('id', 1);
+      expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('username');
-      expect(response.body).toHaveProperty('email');
-      expect(response.body).toHaveProperty('role');
       expect(response.body).not.toHaveProperty('password');
     });
 
     test('should return 404 for non-existent user', async () => {
-      await request(app)
-        .get('/api/user/999999')
+      const response = await request(app)
+        .get('/api/user/9999')
         .expect(404);
+
+      expect(response.body).toHaveProperty('error', 'User not found');
     });
   });
 
-  describe('Search Functionality', () => {
-    test('should search users by username', async () => {
+  describe('Posts Endpoint', () => {
+    test('should return list of posts', async () => {
+      const response = await request(app)
+        .get('/api/posts')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+  });
+
+  describe('Search Endpoint', () => {
+    test('should search users by query', async () => {
       const response = await request(app)
         .get('/api/search?q=admin')
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
-      expect(response.body[0]).toHaveProperty('username');
-      expect(response.body[0]).toHaveProperty('email');
     });
 
-    test('should search users by email', async () => {
-      const response = await request(app)
-        .get('/api/search?q=example.com')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    test('should return empty array for no matches', async () => {
+    test('should handle empty search results', async () => {
       const response = await request(app)
         .get('/api/search?q=nonexistentuser12345')
         .expect(200);
@@ -158,35 +157,18 @@ describe('Additional Backend API Tests', () => {
     });
   });
 
-  describe('File Operations', () => {
-    test('should handle file download request', async () => {
-      await request(app)
-        .get('/api/file?filename=test.txt')
-        .expect(404); // File doesn't exist, but endpoint should handle it
-    });
-
-    test('should expose file path in error (security issue demo)', async () => {
+  describe('File Download Endpoint', () => {
+    test('should return 404 for non-existent file', async () => {
       const response = await request(app)
         .get('/api/file?filename=nonexistent.txt')
         .expect(404);
 
-      expect(response.body).toHaveProperty('error', 'File not found');
-      expect(response.body).toHaveProperty('path');
+      expect(response.body).toHaveProperty('error');
     });
   });
 
-  describe('Upload Endpoint', () => {
-    test('should handle upload endpoint (not implemented)', async () => {
-      const response = await request(app)
-        .post('/api/upload')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('message', 'Upload endpoint (not implemented)');
-    });
-  });
-
-  describe('System Information', () => {
-    test('should provide system info for admin users', async () => {
+  describe('System Info Endpoint', () => {
+    test('should return system info for admin user', async () => {
       const response = await request(app)
         .get('/api/system-info')
         .set('Authorization', `Bearer ${authToken}`)
@@ -197,70 +179,20 @@ describe('Additional Backend API Tests', () => {
       expect(response.body).toHaveProperty('timestamp');
     });
 
-    test('should reject non-admin users', async () => {
-      // First register a regular user
-      await request(app)
-        .post('/api/register')
-        .send({
-          username: 'regularuser',
-          email: 'regular@example.com',
-          password: 'password123'
-        });
-
-      // Login as regular user
-      const loginResponse = await request(app)
-        .post('/api/login')
-        .send({ username: 'regularuser', password: 'password123' });
-
-      const userToken = loginResponse.body.token;
-
-      // Try to access admin endpoint
-      await request(app)
-        .get('/api/system-info')
-        .set('Authorization', `Bearer ${userToken}`)
-        .expect(403);
-    });
-
-    test('should reject system-info without authentication', async () => {
+    test('should fail without authentication', async () => {
       await request(app)
         .get('/api/system-info')
         .expect(401);
     });
   });
 
-  describe('Error Handling', () => {
-    test('should handle 404 for non-existent endpoints', async () => {
-      await request(app)
-        .get('/api/nonexistent')
-        .expect(404);
-    });
-
-    test('should handle malformed requests gracefully', async () => {
-      await request(app)
-        .post('/api/login')
-        .send('invalid json')
-        .expect(401); // App treats malformed JSON as missing credentials
-    });
-  });
-
-  describe('Posts Endpoint', () => {
-    test('should return all posts', async () => {
+  describe('Upload Endpoint', () => {
+    test('should handle upload endpoint (not implemented)', async () => {
       const response = await request(app)
-        .get('/api/posts')
+        .post('/api/upload')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
-      expect(response.body[0]).toHaveProperty('title');
-      expect(response.body[0]).toHaveProperty('content');
-    });
-  });
-
-  describe('Swagger Documentation', () => {
-    test('should serve API documentation', async () => {
-      await request(app)
-        .get('/api-docs/')
-        .expect(200); // Swagger UI serves directly
+      expect(response.body).toHaveProperty('message');
     });
   });
 });

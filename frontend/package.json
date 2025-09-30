@@ -51,6 +51,8 @@
     "frontend"
   ],
   "author": "SonarSource Solutions Engineering",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.0"
+  }
 }
-
