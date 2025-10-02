@@ -444,6 +444,11 @@ app.get('/api/posts', (req, res) => {
 app.get('/api/search', (req, res) => {
     const { q } = req.query;
 
+    // 🔒 SECURITY: Validate search query is a string
+    if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: 'Search query must be a string' });
+    }
+
     // 🔒 SECURITY: Using parameterized query to prevent SQL injection
     const query = `SELECT username, email FROM users WHERE username LIKE ? OR email LIKE ?`;
     

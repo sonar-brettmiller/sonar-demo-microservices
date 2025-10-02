@@ -36,9 +36,9 @@ function App() {
       // If successful, user is still authenticated
       setUser({ token });
     } catch (error) {
-      // Token is invalid, clear it
+      // Token is invalid, clear it and log the reason
       localStorage.removeItem('authToken');
-      console.log('Session expired, please log in again');
+      console.log('Session expired, please log in again', error.message);
     }
   };
 

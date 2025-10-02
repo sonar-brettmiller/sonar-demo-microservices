@@ -155,6 +155,22 @@ describe('Backend API - Additional Coverage', () => {
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBe(0);
     });
+
+    test('should reject missing search query', async () => {
+      const response = await request(app)
+        .get('/api/search')
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Search query must be a string');
+    });
+
+    test('should reject non-string search query', async () => {
+      const response = await request(app)
+        .get('/api/search?q[]=malicious')
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Search query must be a string');
+    });
   });
 
   describe('File Download Endpoint', () => {
