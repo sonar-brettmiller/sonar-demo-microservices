@@ -1,41 +1,90 @@
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import SearchComponent from './SearchComponent';
 
-// ⚠️ SECURITY ISSUE: Tests for search component with SQL injection vulnerability
 describe('SearchComponent', () => {
-  const mockOnSearch = jest.fn();
-
-  test('renders search input', () => {
-    render(<SearchComponent onSearch={mockOnSearch} />);
-    
-    const searchInput = screen.getByPlaceholderText(/Search by username or email/i);
-    const searchButton = screen.getByRole('button', { name: /Search/i });
-    
-    expect(searchInput).toBeTruthy();
-    expect(searchButton).toBeTruthy();
+  test('renders search component', () => {
+    render(<SearchComponent onSearch={jest.fn()} results={[]} />);
+    expect(screen.getByText(/Search Users/i)).toBeInTheDocument();
   });
 
-  test('handles search input changes', () => {
-    render(<SearchComponent onSearch={mockOnSearch} />);
-    
+  test('has search input field', () => {
+    render(<SearchComponent onSearch={jest.fn()} results={[]} />);
+    expect(screen.getByPlaceholderText(/Search by username or email/i)).toBeInTheDocument();
+  });
+
+  test('has search button', () => {
+    render(<SearchComponent onSearch={jest.fn()} results={[]} />);
+    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
+  });
+
+  test('updates query when typing', () => {
+    render(<SearchComponent onSearch={jest.fn()} results={[]} />);
     const searchInput = screen.getByPlaceholderText(/Search by username or email/i);
+    
     fireEvent.change(searchInput, { target: { value: 'test query' } });
     
     expect(searchInput.value).toBe('test query');
   });
 
-  test('demonstrates SQL injection vulnerability in search', () => {
-    render(<SearchComponent onSearch={mockOnSearch} />);
+  test('calls onSearch with trimmed query when form is submitted', () => {
+    const mockOnSearch = jest.fn();
+    render(<SearchComponent onSearch={mockOnSearch} results={[]} />);
     
     const searchInput = screen.getByPlaceholderText(/Search by username or email/i);
-    const searchButton = screen.getByRole('button', { name: /Search/i });
+    const searchButton = screen.getByRole('button', { name: /search/i });
     
-    // Test with SQL injection payload (intentional vulnerability)
-    const sqlInjectionPayload = "'; DROP TABLE users; --";
-    fireEvent.change(searchInput, { target: { value: sqlInjectionPayload } });
+    fireEvent.change(searchInput, { target: { value: '  test query  ' } });
     fireEvent.click(searchButton);
     
-    // This tests the vulnerable search submission code
-    expect(mockOnSearch).toHaveBeenCalledWith(sqlInjectionPayload);
+    expect(mockOnSearch).toHaveBeenCalledWith('test query');
+  });
+
+  test('shows alert when search query is empty', () => {
+    window.alert = jest.fn();
+    render(<SearchComponent onSearch={jest.fn()} results={[]} />);
+    
+    const searchButton = screen.getByRole('button', { name: /search/i });
+    fireEvent.click(searchButton);
+    
+    expect(window.alert).toHaveBeenCalledWith('Please enter a search query');
+  });
+
+  test('does not display results when results array is empty', () => {
+    render(<SearchComponent onSearch={jest.fn()} results={[]} />);
+    expect(screen.queryByText(/Search Results/i)).not.toBeInTheDocument();
+  });
+
+  test('displays search results when provided', () => {
+    const mockResults = [
+      { username: 'user1', email: 'user1@example.com' },
+      { username: 'user2', email: 'user2@example.com' }
+    ];
+    
+    render(<SearchComponent onSearch={jest.fn()} results={mockResults} />);
+    
+    expect(screen.getByText(/Search Results \(2\)/i)).toBeInTheDocument();
+    expect(screen.getByText('user1')).toBeInTheDocument();
+    expect(screen.getByText('user2')).toBeInTheDocument();
+  });
+
+  test('displays email addresses in results', () => {
+    const mockResults = [
+      { username: 'user1', email: 'user1@example.com' }
+    ];
+    
+    render(<SearchComponent onSearch={jest.fn()} results={mockResults} />);
+    
+    expect(screen.getByText(/user1@example.com/i)).toBeInTheDocument();
+  });
+
+  test('handles null results gracefully', () => {
+    render(<SearchComponent onSearch={jest.fn()} results={null} />);
+    expect(screen.queryByText(/Search Results/i)).not.toBeInTheDocument();
+  });
+
+  test('handles undefined results gracefully', () => {
+    render(<SearchComponent onSearch={jest.fn()} />);
+    expect(screen.queryByText(/Search Results/i)).not.toBeInTheDocument();
   });
 });

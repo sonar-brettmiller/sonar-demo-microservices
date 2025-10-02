@@ -1,44 +1,118 @@
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import LoginForm from './LoginForm';
 
-// ⚠️ SECURITY ISSUE: Tests for insecure login component
 describe('LoginForm Component', () => {
-  const mockOnLogin = jest.fn();
-
   test('renders login form', () => {
-    render(<LoginForm onLogin={mockOnLogin} />);
-    
-    const usernameField = screen.getByLabelText(/username/i);
-    const passwordField = screen.getByLabelText(/password/i);
-    const loginButton = screen.getByRole('button', { name: /login/i });
-    
-    expect(usernameField).toBeTruthy();
-    expect(passwordField).toBeTruthy();
-    expect(loginButton).toBeTruthy();
+    render(<LoginForm onLogin={jest.fn()} />);
+    expect(screen.getByText(/Login to Demo App/i)).toBeInTheDocument();
   });
 
-  test('handles form submission', () => {
+  test('has username input field', () => {
+    render(<LoginForm onLogin={jest.fn()} />);
+    expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
+  });
+
+  test('has password input field', () => {
+    render(<LoginForm onLogin={jest.fn()} />);
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  });
+
+  test('has submit button', () => {
+    render(<LoginForm onLogin={jest.fn()} />);
+    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+  });
+
+  test('updates username field when typing', () => {
+    render(<LoginForm onLogin={jest.fn()} />);
+    const usernameInput = screen.getByLabelText(/username/i);
+    
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    
+    expect(usernameInput.value).toBe('testuser');
+  });
+
+  test('updates password field when typing', () => {
+    render(<LoginForm onLogin={jest.fn()} />);
+    const passwordInput = screen.getByLabelText(/password/i);
+    
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    
+    expect(passwordInput.value).toBe('password123');
+  });
+
+  test('calls onLogin with credentials when form is submitted', () => {
+    const mockOnLogin = jest.fn();
     render(<LoginForm onLogin={mockOnLogin} />);
     
     const usernameInput = screen.getByLabelText(/username/i);
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole('button', { name: /login/i });
     
-    fireEvent.change(usernameInput, { target: { value: 'admin' } });
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     fireEvent.click(submitButton);
     
-    // This tests the vulnerable login submission code
-    expect(mockOnLogin).toHaveBeenCalled();
+    expect(mockOnLogin).toHaveBeenCalledWith({
+      username: 'testuser',
+      password: 'password123'
+    });
   });
 
-  test('demonstrates insecure password handling', () => {
+  test('shows alert when username is empty', () => {
+    window.alert = jest.fn();
+    render(<LoginForm onLogin={jest.fn()} />);
+    
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole('button', { name: /login/i });
+    
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.click(submitButton);
+    
+    expect(window.alert).toHaveBeenCalledWith('Please enter both username and password');
+  });
+
+  test('shows alert when password is empty', () => {
+    window.alert = jest.fn();
+    render(<LoginForm onLogin={jest.fn()} />);
+    
+    const usernameInput = screen.getByLabelText(/username/i);
+    const submitButton = screen.getByRole('button', { name: /login/i });
+    
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.click(submitButton);
+    
+    expect(window.alert).toHaveBeenCalledWith('Please enter both username and password');
+  });
+
+  test('shows alert when username is too short', () => {
+    window.alert = jest.fn();
+    render(<LoginForm onLogin={jest.fn()} />);
+    
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole('button', { name: /login/i });
+    
+    fireEvent.change(usernameInput, { target: { value: 'ab' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.click(submitButton);
+    
+    expect(window.alert).toHaveBeenCalled();
+  });
+
+  test('clears form after successful submission', () => {
+    const mockOnLogin = jest.fn();
     render(<LoginForm onLogin={mockOnLogin} />);
     
-    // Test that exercises the component's insecure password handling
+    const usernameInput = screen.getByLabelText(/username/i);
     const passwordInput = screen.getByLabelText(/password/i);
-    fireEvent.change(passwordInput, { target: { value: 'weakpassword' } });
+    const submitButton = screen.getByRole('button', { name: /login/i });
     
-    expect(passwordInput.value).toBe('weakpassword');
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.click(submitButton);
+    
+    expect(usernameInput.value).toBe('');
+    expect(passwordInput.value).toBe('');
   });
 });

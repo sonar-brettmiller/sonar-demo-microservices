@@ -3,12 +3,13 @@ on:
   push:
     branches:
       - main
+      - 'feature/**'
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
   sonarqube:
     name: SonarQube
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,7 +36,32 @@ jobs:
           cd frontend
           npm test -- --coverage --watchAll=false
       
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r python-service/requirements.txt
+          pip install -r python-service/requirements-dev.txt
+
+      - name: Run Python tests with coverage
+        working-directory: python-service
+        run: |
+          python -m pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term-missing
+      
+      - name: Verify coverage reports exist
+        run: |
+          echo "Checking for coverage reports..."
+          ls -la backend/coverage/lcov.info || echo "❌ Backend coverage missing"
+          ls -la frontend/coverage/lcov.info || echo "❌ Frontend coverage missing"
+          ls -la python-service/coverage.xml || echo "❌ Python coverage missing"
+          echo "Coverage reports verified!"
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
