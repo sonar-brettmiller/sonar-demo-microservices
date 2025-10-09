@@ -4,8 +4,14 @@ on:
   push:
     branches: [ main, develop, Test ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, Test ]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  issues: write
 
 env:
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
