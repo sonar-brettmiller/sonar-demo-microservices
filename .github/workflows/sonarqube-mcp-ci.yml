@@ -17,7 +17,7 @@ permissions:
 
 env:
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  SONAR_HOST_URL: https://sonarcloud.io
   SONAR_ORGANIZATION: sonar-brettmiller
   SONAR_PROJECT_KEY: sonar-brettmiller_sonar-demo-microservices
 
@@ -328,7 +328,7 @@ jobs:
                 ],
                 "env": {
                   "SONAR_TOKEN": "${{ secrets.SONAR_TOKEN }}",
-                  "SONAR_HOST_URL": "${{ secrets.SONAR_HOST_URL }}",
+                  "SONAR_HOST_URL": "https://sonarcloud.io",
                   "SONAR_ORGANIZATION": "${{ env.SONAR_ORGANIZATION }}",
                   "STORAGE_PATH": "${{ runner.temp }}/mcp-storage"
                 }
