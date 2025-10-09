@@ -159,3 +159,4 @@ This demo helps Solutions Engineers demonstrate:
 
 *Built with ❤️ by SonarSource Solutions Engineering*
 
+# Trigger workflow
