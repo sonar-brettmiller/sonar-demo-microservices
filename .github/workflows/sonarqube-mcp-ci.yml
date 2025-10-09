@@ -422,3 +422,4 @@ jobs:
           echo "2. Address any security hotspots" >> $GITHUB_STEP_SUMMARY
           echo "3. Improve code coverage where needed" >> $GITHUB_STEP_SUMMARY
           echo "4. Consider MCP server recommendations" >> $GITHUB_STEP_SUMMARY
+# Trigger workflow
