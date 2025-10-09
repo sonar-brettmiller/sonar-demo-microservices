@@ -1,0 +1,236 @@
+---
+alwaysApply: true
+---
+
+# Coding Style Rules for SonarSource Security Demo
+
+## General Code Structure
+
+### React Components
+- Use functional components with React Hooks
+- Import React and hooks at the top: `import React, { useState, useEffect } from 'react';`
+- Place all imports at the top of the file, grouped by:
+  1. React imports
+  2. External libraries (axios, etc.)
+  3. Styles
+  4. Internal components
+- Default export the main component at the bottom: `export default ComponentName;`
+
+### Constants
+- Define constants at the top of the file, after imports
+- Use SCREAMING_SNAKE_CASE for constants
+- Always include security warning comments for hardcoded secrets:
+  ```javascript
+  // ⚠️ SECURITY ISSUE: Hardcoded sensitive configuration
+  const API_BASE_URL = 'http://localhost:5000/api';
+  ```
+
+### State Management
+- Declare all useState hooks at the beginning of the component
+- Use descriptive state variable names
+- Group related states together
+- Example:
+  ```javascript
+  const [user, setUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [posts, setPosts] = useState([]);
+  ```
+
+## Security Annotations
+
+### Security Issue Comments
+- ALWAYS mark security vulnerabilities with comment prefix: `// ⚠️ SECURITY ISSUE:`
+- Place security comments BEFORE the vulnerable code
+- Describe the specific security risk
+- Examples:
+  ```javascript
+  // ⚠️ SECURITY ISSUE: Storing sensitive data in localStorage
+  localStorage.setItem('userCredentials', JSON.stringify(userInfo));
+  
+  // ⚠️ SECURITY ISSUE: XSS vulnerability - dangerouslySetInnerHTML
+  <div dangerouslySetInnerHTML={renderUserHTML(post.content)} />
+  
+  // ⚠️ SECURITY ISSUE: Console logging sensitive authentication data
+  console.log('Login successful:', userInfo);
+  ```
+
+### Common Security Issues to Annotate
+1. Hardcoded secrets/credentials
+2. LocalStorage usage for sensitive data
+3. Console logging of sensitive information
+4. Unsafe HTML rendering (dangerouslySetInnerHTML, innerHTML)
+5. Missing input validation/sanitization
+6. Weak authorization checks
+7. Command execution capabilities
+8. Debug endpoints in production
+9. Exposing sensitive information in UI
+10. Missing authentication checks
+
+## Functions and Methods
+
+### Async Functions
+- Use async/await pattern for asynchronous operations
+- Always wrap API calls in try-catch blocks
+- Use descriptive error logging:
+  ```javascript
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users`);
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  };
+  ```
+
+### Event Handlers
+- Prefix handler functions with `handle`: `handleLogin`, `handleLogout`, `handleSearch`
+- Use arrow functions for inline event handlers
+- Example:
+  ```javascript
+  onClick={handleLogout}
+  onKeyPress={(e) => {
+    if (e.key === 'Enter') {
+      executeCommand(e.target.value);
+    }
+  }}
+  ```
+
+### Function Organization
+Order functions in logical groups:
+1. Data fetching functions (`fetchUsers`, `fetchPosts`)
+2. Event handlers (`handleLogin`, `handleLogout`)
+3. Utility/helper functions (`isAdmin`, `renderUserHTML`)
+
+## JSX and UI
+
+### Bootstrap Classes
+- Use Bootstrap classes for styling: `btn`, `card`, `alert`, `navbar`, etc.
+- Follow Bootstrap conventions: `btn-primary`, `btn-block`, `card-header`
+
+### Conditional Rendering
+- Use ternary operators for simple conditions:
+  ```javascript
+  {user ? (
+    <span>Welcome, {user.username}</span>
+  ) : (
+    <span>Please log in</span>
+  )}
+  ```
+- Use logical AND (&&) for conditional display:
+  ```javascript
+  {isAdmin() && <span className="badge badge-danger">ADMIN</span>}
+  ```
+
+### Inline Comments in JSX
+- Place comments inside JSX using `{/* comment */}` syntax
+- Use security warnings in JSX comments:
+  ```javascript
+  {/* ⚠️ SECURITY ISSUE: Exposing role information in UI */}
+  ```
+
+### Lists and Maps
+- Always use `key` prop when mapping arrays
+- Use descriptive key values when possible (prefer `post.id` over index)
+
+## Code Formatting
+
+### String Templates
+- Use template literals with ${} for string interpolation
+- Example: `` `${API_BASE_URL}/users` ``
+
+### Console Logging
+- Include descriptive messages: `console.log('Login successful:', userInfo);`
+- Use console.error for errors: `console.error('Login failed:', error);`
+- Log variable names with values: `console.log('Token:', userData.token);`
+
+### Error Handling
+- Use alert() for user-facing error messages
+- Include fallback error text:
+  ```javascript
+  alert(`Login failed: ${error.response?.data?.error || error.message}`);
+  ```
+
+## Spacing and Layout
+
+### Blank Lines
+- Add blank line after imports
+- Add blank line between function definitions
+- Add blank line before return statement in components
+- Group related code with blank lines
+
+### Indentation
+- Use 2 spaces for indentation
+- Indent JSX children properly
+- Align JSX attributes consistently
+
+### Comments
+- Use single-line comments: `//`
+- Place comments on line before code (not inline)
+- Use emoji in comments for visual emphasis: `⚠️`, `🚨`, `🔍`
+
+## Specific Patterns
+
+### Authorization Checks
+```javascript
+const isAdmin = () => {
+  return user && (user.role === 'admin' || user.username === 'admin');
+};
+
+if (!user || user.role !== 'admin') {
+  console.log('Admin access required');
+  return;
+}
+```
+
+### API Requests
+```javascript
+const response = await axios.post(`${API_BASE_URL}/endpoint`, 
+  { data },
+  { headers: { Authorization: `Bearer ${user.token}` } }
+);
+```
+
+### LocalStorage Usage
+```javascript
+// Always annotate with security warning
+// ⚠️ SECURITY ISSUE: Storing sensitive data in localStorage
+localStorage.setItem('userCredentials', JSON.stringify(userInfo));
+const saved = localStorage.getItem('userCredentials');
+if (saved) {
+  const creds = JSON.parse(saved);
+}
+```
+
+## Naming Conventions
+
+- **Components**: PascalCase (`LoginForm`, `UserList`)
+- **Functions**: camelCase (`fetchUsers`, `handleLogin`)
+- **Constants**: SCREAMING_SNAKE_CASE (`API_BASE_URL`, `JWT_SECRET`)
+- **State variables**: camelCase (`user`, `searchResults`)
+- **Props**: camelCase (`onLogin`, `onSearch`)
+
+## Import Organization
+
+1. React and React libraries
+2. Third-party libraries (alphabetical)
+3. CSS/Style imports
+4. Local components (alphabetical)
+
+Example:
+```javascript
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import './App.css';
+import FileUpload from './components/FileUpload';
+import LoginForm from './components/LoginForm';
+import SearchComponent from './components/SearchComponent';
+import UserList from './components/UserList';
+```
+
+## Demo/Educational Code
+- This is demonstration code showing security vulnerabilities
+- Maintain intentional security issues for educational purposes
+- Always clearly mark security issues with warning comments
+- Include descriptive variable names that indicate purpose
+- Keep code readable and well-commented for learning
