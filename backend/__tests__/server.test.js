@@ -10,11 +10,10 @@ describe('SonarSource Demo Backend API', () => {
       // Test the actual debug endpoint (this executes server.js code)
       const response = await request(app)
         .get('/api/debug')
-        .expect(200);
+        .expect(404); // Debug endpoint was removed for security
       
-      // Verify it exposes secrets (intentional vulnerability)
-      expect(response.body).toHaveProperty('secrets');
-      expect(response.body.secrets).toHaveProperty('jwtSecret');
+      // Verify it returns 404 (security improvement)
+      expect(response.status).toBe(404);
     });
 
     test('should accept SQL injection in login endpoint', async () => {
