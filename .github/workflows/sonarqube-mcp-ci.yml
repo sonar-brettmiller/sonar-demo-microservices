@@ -483,11 +483,18 @@ jobs:
               });
               
               console.error('Fetching issues...');
-              const issues = await queryMCPServer('search_sonar_issues_in_projects', {
+              let issues = await queryMCPServer('search_sonar_issues_in_projects', {
                 projects: [process.env.SONAR_PROJECT_KEY],
                 pullRequestId: process.env.PR_NUMBER,
                 severities: ['BLOCKER', 'CRITICAL', 'MAJOR']
               });
+              if (!issues || (Array.isArray(issues?.issues) && issues.issues.length === 0)) {
+                console.error('No PR-scoped issues found; falling back to project issues via MCP');
+                issues = await queryMCPServer('search_sonar_issues_in_projects', {
+                  projects: [process.env.SONAR_PROJECT_KEY],
+                  severities: ['BLOCKER', 'CRITICAL', 'MAJOR']
+                });
+              }
               
               const result = {
                 projectKey: process.env.SONAR_PROJECT_KEY,
