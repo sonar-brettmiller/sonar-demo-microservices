@@ -75,6 +75,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
       - name: Generate Project Health Report
         run: |
           echo "🔍 Analyzing project health using SonarQube MCP Server..."
