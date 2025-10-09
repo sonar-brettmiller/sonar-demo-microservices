@@ -338,6 +338,146 @@ jobs:
             
             console.log(`Created check run with ${annotations.length} annotations`);
 
+      - name: Add Inline PR Review Comments
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read quality gate data
+            let qualityGateData = {};
+            try {
+              qualityGateData = JSON.parse(fs.readFileSync('quality-gate-status.json', 'utf8'));
+            } catch (e) {
+              console.log('No quality gate data found');
+              return;
+            }
+            
+            if (!qualityGateData.issues || qualityGateData.issues.length === 0) {
+              console.log('No issues found to comment on');
+              return;
+            }
+            
+            // Generate AI-powered fix recommendations based on issue type
+            function generateFixRecommendation(issue) {
+              const recommendations = {
+                'VULNERABILITY': {
+                  'hardcoded': '🔒 **Security Fix Needed**: Remove hardcoded credentials and use environment variables or a secure secrets manager instead.\n\n```javascript\n// ❌ Bad\nconst API_KEY = "hardcoded-secret";\n\n// ✅ Good\nconst API_KEY = process.env.API_KEY;\n```',
+                  'sql-injection': '🔒 **Security Fix Needed**: Use parameterized queries or prepared statements to prevent SQL injection.\n\n```javascript\n// ❌ Bad\nconst query = `SELECT * FROM users WHERE id=\'${userId}\'`;\n\n// ✅ Good\nconst query = \'SELECT * FROM users WHERE id=?\';\ndb.query(query, [userId]);\n```',
+                  'command-injection': '🔒 **Security Fix Needed**: Sanitize user input and avoid using `exec()` with user-provided data. Use safer alternatives or whitelist allowed commands.\n\n```javascript\n// ❌ Bad\nexec(`ls ${userInput}`);\n\n// ✅ Good\n// Validate and sanitize input\nconst allowedPaths = [\'/safe/path1\', \'/safe/path2\'];\nif (allowedPaths.includes(userInput)) {\n  exec(`ls ${userInput}`);\n}\n```',
+                  'weak-crypto': '🔒 **Security Fix Needed**: Use strong, modern encryption algorithms (AES-256) instead of deprecated ones (DES, MD5).\n\n```javascript\n// ❌ Bad\nconst cipher = crypto.createCipher(\'des\', key);\n\n// ✅ Good\nconst cipher = crypto.createCipheriv(\'aes-256-gcm\', key, iv);\n```',
+                  'xss': '🔒 **Security Fix Needed**: Sanitize user input before rendering to prevent XSS attacks. Use a library like DOMPurify or escape HTML entities.\n\n```javascript\n// ❌ Bad\ndiv.innerHTML = userContent;\n\n// ✅ Good\nconst DOMPurify = require(\'dompurify\');\ndiv.innerHTML = DOMPurify.sanitize(userContent);\n```',
+                  'default': '🔒 **Security Fix Needed**: This vulnerability needs immediate attention. Review the code and apply security best practices.'
+                },
+                'CODE_SMELL': {
+                  'unused': '🧹 **Code Quality**: Remove unused variables, functions, or imports to improve code maintainability.\n\n```javascript\n// ❌ Bad\nconst unusedVar = "never used";\nfunction doWork(data) { return data; }\n\n// ✅ Good\nfunction doWork(data) { return data; }\n```',
+                  'complexity': '🧹 **Code Quality**: Reduce complexity by breaking down this function into smaller, more manageable pieces.\n\n**Refactoring Tips:**\n- Extract complex conditions into named functions\n- Split large functions into smaller ones\n- Use early returns to reduce nesting',
+                  'duplicate': '🧹 **Code Quality**: Remove duplicated code by extracting it into a reusable function or module.',
+                  'default': '🧹 **Code Quality**: Consider refactoring this code to improve readability and maintainability.'
+                },
+                'BUG': {
+                  'default': '🐛 **Bug Alert**: This code may cause unexpected behavior. Review the logic and add appropriate error handling.'
+                }
+              };
+              
+              let recommendation = '';
+              const issueType = issue.type || 'CODE_SMELL';
+              const issueMessage = issue.message.toLowerCase();
+              
+              if (issueType === 'VULNERABILITY') {
+                if (issueMessage.includes('hardcoded') || issueMessage.includes('credential') || issueMessage.includes('secret')) {
+                  recommendation = recommendations.VULNERABILITY.hardcoded;
+                } else if (issueMessage.includes('sql') || issueMessage.includes('injection')) {
+                  recommendation = recommendations.VULNERABILITY['sql-injection'];
+                } else if (issueMessage.includes('command') || issueMessage.includes('exec')) {
+                  recommendation = recommendations.VULNERABILITY['command-injection'];
+                } else if (issueMessage.includes('weak') || issueMessage.includes('crypto') || issueMessage.includes('des') || issueMessage.includes('md5')) {
+                  recommendation = recommendations.VULNERABILITY['weak-crypto'];
+                } else if (issueMessage.includes('xss') || issueMessage.includes('cross-site')) {
+                  recommendation = recommendations.VULNERABILITY.xss;
+                } else {
+                  recommendation = recommendations.VULNERABILITY.default;
+                }
+              } else if (issueType === 'CODE_SMELL') {
+                if (issueMessage.includes('unused') || issueMessage.includes('never')) {
+                  recommendation = recommendations.CODE_SMELL.unused;
+                } else if (issueMessage.includes('complex')) {
+                  recommendation = recommendations.CODE_SMELL.complexity;
+                } else if (issueMessage.includes('duplicate')) {
+                  recommendation = recommendations.CODE_SMELL.duplicate;
+                } else {
+                  recommendation = recommendations.CODE_SMELL.default;
+                }
+              } else if (issueType === 'BUG') {
+                recommendation = recommendations.BUG.default;
+              }
+              
+              return recommendation;
+            }
+            
+            // Create review comments for each issue
+            const comments = [];
+            
+            for (const issue of qualityGateData.issues) {
+              const filename = issue.component.replace(/^.*:/, ''); // Extract filename from component
+              const line = issue.line || 1;
+              const fixRecommendation = generateFixRecommendation(issue);
+              
+              const severityEmoji = issue.severity === 'CRITICAL' ? '🚨' :
+                                   issue.severity === 'MAJOR' ? '⚠️' : 'ℹ️';
+              
+              const body = `${severityEmoji} **SonarQube ${issue.type}** (${issue.severity})
+
+**Issue**: ${issue.message}
+
+${fixRecommendation}
+
+---
+*🤖 AI-powered insight from SonarQube MCP Server*`;
+              
+              comments.push({
+                path: filename,
+                line: line,
+                body: body
+              });
+            }
+            
+            console.log(`Preparing ${comments.length} inline review comments`);
+            
+            // Create a review with inline comments
+            try {
+              const review = await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                event: 'COMMENT',
+                body: '🤖 **SonarQube MCP Server Analysis**\n\nI\'ve analyzed your code and found some issues that need attention. Please review the inline comments below for specific recommendations on how to fix them.',
+                comments: comments.slice(0, 30) // GitHub limits to 30 comments per review
+              });
+              
+              console.log(`Created PR review with ${comments.length} inline comments`);
+            } catch (error) {
+              console.log('Failed to create review comments:', error.message);
+              
+              // Fallback: Create individual comments if review fails
+              for (const comment of comments.slice(0, 10)) {
+                try {
+                  await github.rest.pulls.createReviewComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: context.payload.pull_request.number,
+                    body: comment.body,
+                    path: comment.path,
+                    line: comment.line,
+                    side: 'RIGHT'
+                  });
+                } catch (err) {
+                  console.log(`Failed to comment on ${comment.path}:${comment.line}:`, err.message);
+                }
+              }
+            }
+
       - name: Create PR Comment with Health Insights
         uses: actions/github-script@v7
         with:
