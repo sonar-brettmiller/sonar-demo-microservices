@@ -322,8 +322,9 @@ jobs:
                 ],
                 "env": {
                   "SONAR_TOKEN": "${{ secrets.SONAR_TOKEN }}",
-                  "SONAR_HOST_URL": "${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}",
-                  "SONAR_ORGANIZATION": "${{ env.SONAR_ORGANIZATION }}"
+                  "SONAR_HOST_URL": "${{ secrets.SONAR_HOST_URL }}",
+                  "SONAR_ORGANIZATION": "${{ env.SONAR_ORGANIZATION }}",
+                  "STORAGE_PATH": "${{ runner.temp }}/mcp-storage"
                 }
               }
             }
@@ -337,7 +338,7 @@ jobs:
           echo "⏳ Waiting for SonarQube analysis to complete..."
           sleep 45
 
-      - name: Query Quality Gate via MCP Server
+      - name: Fetch Real Issues from SonarCloud via MCP
         run: |
           echo "🤖 Querying SonarQube via MCP Server..."
           
@@ -419,6 +420,11 @@ jobs:
         run: |
           echo "🔍 Processing quality gate status and fetching issues..."
           
+          # Export PR number for MCP tool when running on pull_request events
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.event_name }}" = "pull_request_target" ]; then
+            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          fi
+
           # Create a comprehensive query script
           cat > query-sonar-data.js << 'EOF'
           const { spawn } = require('child_process');
@@ -431,7 +437,8 @@ jobs:
                   ...process.env,
                   SONAR_TOKEN: process.env.SONAR_TOKEN,
                   SONAR_HOST_URL: process.env.SONAR_HOST_URL || 'https://sonarcloud.io',
-                  SONAR_ORGANIZATION: process.env.SONAR_ORGANIZATION
+                  SONAR_ORGANIZATION: process.env.SONAR_ORGANIZATION,
+                  STORAGE_PATH: process.env.STORAGE_PATH || `${process.env.RUNNER_TEMP || '/tmp'}/mcp-storage`
                 },
                 stdio: ['pipe', 'pipe', 'pipe']
               });
@@ -478,13 +485,15 @@ jobs:
               console.error('Fetching issues...');
               const issues = await queryMCPServer('search_sonar_issues_in_projects', {
                 projects: [process.env.SONAR_PROJECT_KEY],
+                pullRequestId: process.env.PR_NUMBER,
                 severities: ['BLOCKER', 'CRITICAL', 'MAJOR']
               });
               
               const result = {
                 projectKey: process.env.SONAR_PROJECT_KEY,
                 qualityGate: qualityGate,
-                issues: issues?.content?.issues || []
+                issues: Array.isArray(issues?.issues) ? issues.issues : (issues?.content?.issues || []),
+                components: issues?.components || []
               };
               
               console.log(JSON.stringify(result, null, 2));
@@ -497,12 +506,8 @@ jobs:
           main();
           EOF
           
-          # Run the query
-          node query-sonar-data.js > quality-gate-status.json 2>&1 || {
-            echo "⚠️ MCP Server query failed, using fallback..."
-            # Fallback to direct API call if MCP fails
-            node .mcp/sonarqube-mcp-client.js health > quality-gate-status.json
-          }
+          # Run the query (no API fallback; MCP is the source of truth)
+          node query-sonar-data.js > quality-gate-status.json 2>&1
           
           echo "📊 Quality gate data retrieved"
           cat quality-gate-status.json | jq '.' || cat quality-gate-status.json
@@ -593,14 +598,21 @@ jobs:
             const annotations = [];
             
             if (qualityGateData.issues) {
+              const components = new Map();
+              (qualityGateData.components || []).forEach(c => components.set(c.key, c));
+
               qualityGateData.issues.forEach(issue => {
+                const comp = components.get(issue.component) || { path: issue.component.replace(/^.*:/,'') };
+                const filePath = (comp.path || comp.key || '').replace(/^.*:/,'');
+                if (!filePath) return;
+
                 const annotation = {
-                  path: issue.component.replace(/^.*\//, ''), // Extract filename
-                  start_line: issue.line,
-                  end_line: issue.line,
-                  annotation_level: issue.severity === 'CRITICAL' ? 'failure' : 
-                                  issue.severity === 'MAJOR' ? 'warning' : 'notice',
-                  message: `🤖 MCP Insight: ${issue.message} (${issue.type})`
+                  path: filePath,
+                  start_line: issue.line || issue.textRange?.startLine || 1,
+                  end_line: issue.line || issue.textRange?.endLine || issue.textRange?.startLine || 1,
+                  annotation_level: issue.severity === 'CRITICAL' || issue.severity === 'BLOCKER' ? 'failure' : 
+                                   issue.severity === 'MAJOR' ? 'warning' : 'notice',
+                  message: `Rule ${issue.rule} · ${issue.type} · ${issue.severity}: ${issue.message}`
                 };
                 annotations.push(annotation);
               });
@@ -720,15 +732,20 @@ jobs:
             // Create review comments for each issue
             const comments = [];
             
+            const components = new Map();
+            (qualityGateData.components || []).forEach(c => components.set(c.key, c));
+
             for (const issue of qualityGateData.issues) {
-              const filename = issue.component.replace(/^.*:/, ''); // Extract filename from component
-              const line = issue.line || 1;
+              const comp = components.get(issue.component) || { path: issue.component.replace(/^.*:/,'') };
+              const filename = (comp.path || comp.key || '').replace(/^.*:/,'');
+              const line = issue.line || issue.textRange?.startLine || 1;
               const fixRecommendation = generateFixRecommendation(issue);
               
               const severityEmoji = issue.severity === 'CRITICAL' ? '🚨' :
                                    issue.severity === 'MAJOR' ? '⚠️' : 'ℹ️';
               
-              const body = `${severityEmoji} **SonarQube ${issue.type}** (${issue.severity})
+              const body = `${severityEmoji} **SonarQube ${issue.type}** (${issue.severity}) — Rule \
+${issue.rule}
 
 **Issue**: ${issue.message}
 
