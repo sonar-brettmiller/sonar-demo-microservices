@@ -1,0 +1,183 @@
+{
+  "name": "sonarqube-mcp-server",
+  "version": "1.0.0",
+  "description": "SonarQube MCP Server for project health insights and code quality analysis",
+  "author": "SonarSource Solutions Engineering",
+  "license": "MIT",
+  "mcp": {
+    "server": {
+      "name": "sonarqube-mcp-server",
+      "version": "1.0.0",
+      "description": "Provides SonarQube project health insights, code quality metrics, and security analysis through MCP protocol"
+    },
+    "tools": [
+      {
+        "id": "get_project_health",
+        "name": "Get Project Health",
+        "description": "Retrieve overall project health metrics from SonarQube including quality gate status, reliability, security, and maintainability ratings",
+        "parameters": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key to analyze",
+            "required": true
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name to analyze (optional, defaults to main)",
+            "required": false
+          }
+        }
+      },
+      {
+        "id": "get_code_quality_metrics",
+        "name": "Get Code Quality Metrics",
+        "description": "Retrieve detailed code quality metrics including bugs, vulnerabilities, code smells, technical debt, and coverage",
+        "parameters": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key",
+            "required": true
+          },
+          "metricKeys": {
+            "type": "array",
+            "description": "Specific metric keys to retrieve (optional)",
+            "items": {
+              "type": "string"
+            },
+            "required": false
+          }
+        }
+      },
+      {
+        "id": "get_security_hotspots",
+        "name": "Get Security Hotspots",
+        "description": "Retrieve security hotspots and vulnerabilities with priority levels and remediation suggestions",
+        "parameters": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key",
+            "required": true
+          },
+          "severity": {
+            "type": "string",
+            "description": "Filter by severity level (HIGH, MEDIUM, LOW)",
+            "enum": ["HIGH", "MEDIUM", "LOW"],
+            "required": false
+          }
+        }
+      },
+      {
+        "id": "get_coverage_metrics",
+        "name": "Get Coverage Metrics",
+        "description": "Retrieve test coverage metrics including line coverage, branch coverage, and coverage by component",
+        "parameters": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key",
+            "required": true
+          },
+          "component": {
+            "type": "string",
+            "description": "Specific component to analyze (optional)",
+            "required": false
+          }
+        }
+      },
+      {
+        "id": "get_quality_gate_status",
+        "name": "Get Quality Gate Status",
+        "description": "Retrieve the current quality gate status and conditions",
+        "parameters": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key",
+            "required": true
+          }
+        }
+      },
+      {
+        "id": "get_duplication_metrics",
+        "name": "Get Duplication Metrics",
+        "description": "Retrieve code duplication metrics and identify duplicated blocks",
+        "parameters": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key",
+            "required": true
+          }
+        }
+      },
+      {
+        "id": "get_technical_debt",
+        "name": "Get Technical Debt",
+        "description": "Retrieve technical debt metrics and remediation time estimates",
+        "parameters": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key",
+            "required": true
+          }
+        }
+      },
+      {
+        "id": "analyze_pr_impact",
+        "name": "Analyze PR Impact",
+        "description": "Analyze the impact of a pull request on code quality metrics",
+        "parameters": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key",
+            "required": true
+          },
+          "pullRequestKey": {
+            "type": "string",
+            "description": "Pull request key or number",
+            "required": true
+          }
+        }
+      }
+    ],
+    "resources": [
+      {
+        "uri": "sonarqube://project/{projectKey}",
+        "name": "SonarQube Project",
+        "description": "Access to SonarQube project data and metrics",
+        "mimeType": "application/json"
+      },
+      {
+        "uri": "sonarqube://issues/{projectKey}",
+        "name": "Project Issues",
+        "description": "Access to project issues, bugs, vulnerabilities, and code smells",
+        "mimeType": "application/json"
+      },
+      {
+        "uri": "sonarqube://measures/{projectKey}",
+        "name": "Project Measures",
+        "description": "Access to project measures and metrics",
+        "mimeType": "application/json"
+      }
+    ]
+  },
+  "configuration": {
+    "sonarHostUrl": {
+      "type": "string",
+      "description": "SonarQube server URL",
+      "default": "https://sonarcloud.io"
+    },
+    "sonarToken": {
+      "type": "string",
+      "description": "SonarQube authentication token",
+      "sensitive": true
+    },
+    "organization": {
+      "type": "string",
+      "description": "SonarQube organization",
+      "default": "sonar-brettmiller"
+    },
+    "defaultProjectKey": {
+      "type": "string",
+      "description": "Default project key for analysis",
+      "default": "sonar-brettmiller_sonar-demo-microservices"
+    }
+  }
+}
