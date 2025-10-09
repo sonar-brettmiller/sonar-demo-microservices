@@ -9,7 +9,7 @@ on:
 
 env:
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
   SONAR_ORGANIZATION: sonar-brettmiller
   SONAR_PROJECT_KEY: sonar-brettmiller_sonar-demo-microservices
 
@@ -85,17 +85,10 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v1.0.0
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
-            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }}
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }}
-            -Dsonar.login=${{ env.SONAR_TOKEN }}
-            -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info,frontend/coverage/lcov.info
-            -Dsonar.qualitygate.wait=true
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
 
   # Job 3: SonarQube MCP Server Integration
   sonarqube-mcp-integration:
