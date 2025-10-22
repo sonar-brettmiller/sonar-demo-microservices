@@ -1,0 +1,54 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarcloud:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies - Backend
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Install dependencies - Frontend
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run tests with coverage - Backend
+        working-directory: ./backend
+        run: npm test -- --coverage --coverageReporters=lcov
+        continue-on-error: true
+
+      - name: Run tests with coverage - Frontend
+        working-directory: ./frontend
+        run: npm test -- --coverage --coverageReporters=lcov --watchAll=false
+        continue-on-error: true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=sonar-brettmiller_sonar-demo-microservices
+            -Dsonar.organization=sonar-brettmiller
