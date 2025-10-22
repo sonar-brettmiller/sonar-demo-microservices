@@ -136,10 +136,10 @@ app.post('/api/register', async (req, res) => {
         // ⚠️ SECURITY ISSUE: Weak password hashing (low salt rounds)
         const hashedPassword = await bcrypt.hash(password, 5);
         
-        // ⚠️ SECURITY ISSUE: SQL injection vulnerability
-        const query = `INSERT INTO users (username, email, password) VALUES ('${username}', '${email}', '${hashedPassword}')`;
+        // 🔒 SECURITY: Using parameterized query to prevent SQL injection
+        const query = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
         
-        db.run(query, function(err) {
+        db.run(query, [username, email, hashedPassword], function(err) {
             if (err) {
                 // ⚠️ SECURITY ISSUE: Information disclosure through error messages
                 return res.status(500).json({ error: err.message, query: query });
@@ -180,10 +180,10 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
 
-    // ⚠️ SECURITY ISSUE: SQL injection vulnerability in login
-    const query = `SELECT * FROM users WHERE username = '${username}'`;
+    // 🔒 SECURITY: Using parameterized query to prevent SQL injection
+    const query = `SELECT * FROM users WHERE username = ?`;
     
-    db.get(query, async (err, user) => {
+    db.get(query, [username], async (err, user) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -253,10 +253,10 @@ app.get('/api/users', authenticateToken, (req, res) => {
 app.get('/api/user/:id', (req, res) => {
     const { id } = req.params;
 
-    // ⚠️ SECURITY ISSUE: SQL injection vulnerability
-    const query = `SELECT * FROM users WHERE id = ${id}`;
+    // 🔒 SECURITY: Using parameterized query to prevent SQL injection
+    const query = `SELECT * FROM users WHERE id = ?`;
     
-    db.get(query, (err, user) => {
+    db.get(query, [id], (err, user) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -302,10 +302,10 @@ app.get('/api/posts', (req, res) => {
 app.get('/api/search', (req, res) => {
     const { q } = req.query;
 
-    // ⚠️ SECURITY ISSUE: SQL injection in search functionality
-    const query = `SELECT username, email FROM users WHERE username LIKE '%${q}%' OR email LIKE '%${q}%'`;
+    // 🔒 SECURITY: Using parameterized query to prevent SQL injection
+    const query = `SELECT username, email FROM users WHERE username LIKE ? OR email LIKE ?`;
     
-    db.all(query, (err, results) => {
+    db.all(query, [`%${q}%`, `%${q}%`], (err, results) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -327,13 +327,24 @@ app.get('/api/search', (req, res) => {
 app.get('/api/file', (req, res) => {
     const { filename } = req.query;
 
-    // ⚠️ SECURITY ISSUE: Path traversal vulnerability
-    const filePath = path.join(__dirname, 'uploads', filename);
+    // 🔒 SECURITY: Validate and sanitize filename to prevent path traversal
+    if (!filename || typeof filename !== 'string') {
+        return res.status(400).json({ error: 'Invalid filename' });
+    }
     
-    // ⚠️ SECURITY ISSUE: No validation of file path
+    // Remove any path traversal attempts
+    const safeFilename = path.basename(filename);
+    const SAFE_FILENAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
+    
+    if (!SAFE_FILENAME_REGEX.test(safeFilename)) {
+        return res.status(400).json({ error: 'Invalid filename characters' });
+    }
+    
+    const filePath = path.join(__dirname, 'uploads', safeFilename);
+    
     fs.readFile(filePath, (err, data) => {
         if (err) {
-            return res.status(404).json({ error: 'File not found', path: filePath });
+            return res.status(404).json({ error: 'File not found' });
         }
         res.send(data);
     });
@@ -341,71 +352,45 @@ app.get('/api/file', (req, res) => {
 
 /**
  * @swagger
- * /api/exec:
- *   post:
- *     summary: Execute system command (admin only)
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               command:
- *                 type: string
+ * /api/system-info:
+ *   get:
+ *     summary: Get safe system information (admin only)
  */
-app.post('/api/exec', authenticateToken, (req, res) => {
-    const { command } = req.body;
+app.get('/api/system-info', authenticateToken, (req, res) => {
+    // 🔒 SECURITY: Proper authorization check for admin role
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
 
-    // ⚠️ SECURITY ISSUE: Command injection vulnerability
-    // ⚠️ SECURITY ISSUE: No authorization check for admin role
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            return res.status(500).json({ 
-                error: error.message,
-                command: command
-            });
-        }
-        
-        res.json({
-            output: stdout,
-            error: stderr,
-            command: command
-        });
-    });
-});
-
-// ⚠️ SECURITY ISSUE: Information disclosure endpoint
-app.get('/api/debug', (req, res) => {
+    // 🔒 SECURITY: Safe system information without command execution
     res.json({
-        environment: process.env,
-        secrets: {
-            jwtSecret: JWT_SECRET,
-            dbPassword: DB_PASSWORD,
-            apiKey: API_KEY
-        },
-        system: {
-            platform: process.platform,
-            version: process.version,
-            cwd: process.cwd()
-        }
+        platform: process.platform,
+        nodeVersion: process.version,
+        timestamp: new Date().toISOString()
     });
 });
 
-// ⚠️ SECURITY ISSUE: Unrestricted file upload
-app.post('/api/upload', (req, res) => {
-    // Missing file upload handling, but endpoint exists
-    res.json({ message: 'Upload endpoint (not implemented)' });
+// 🔒 SECURITY: Removed dangerous exec endpoint
+// Command execution should never be allowed in production applications
+
+// 🔒 SECURITY: Removed dangerous debug endpoint
+// Debug information should never be exposed in production
+
+// 🔒 SECURITY: File upload endpoint with proper restrictions
+app.post('/api/upload', authenticateToken, (req, res) => {
+    // 🔒 SECURITY: Not implemented to prevent unrestricted uploads
+    res.status(501).json({ 
+        error: 'Upload functionality not implemented',
+        message: 'File upload requires proper security configuration'
+    });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    // ⚠️ SECURITY ISSUE: Information disclosure in error messages
-    console.error(err.stack);
+    // 🔒 SECURITY: Safe error handling without information disclosure
+    console.error('Server error:', err.message);
     res.status(500).json({ 
-        error: err.message,
-        stack: err.stack,
-        details: err
+        error: 'Internal server error'
     });
 });
 
@@ -417,8 +402,6 @@ if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 SonarSource Demo Backend running on port ${PORT}`);
     console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
-    console.log(`🔐 JWT Secret: ${JWT_SECRET}`);
-    console.log(`🗄️  Database Password: ${DB_PASSWORD}`);
   });
 }
 
